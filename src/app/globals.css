@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+:root {
+  /* Paper + ink -- the base "land record ledger" surface */
+  --color-paper: #f1ead8;
+  --color-paper-raised: #f8f4e9;
+  --color-ink: #1b2420;
+  --color-ink-soft: #4a5650;
+
+  /* Forest -- primary brand */
+  --color-forest: #1f4b3f;
+  --color-forest-deep: #143229;
+  --color-forest-light: #3a6b5c;
+
+  /* Clay -- the one accent we spend boldness on (CTAs, signature marks) */
+  --color-clay: #b5622b;
+  --color-clay-deep: #8f4a1f;
+
+  /* Status vocabulary -- used consistently for claim states everywhere */
+  --color-approved: #2f6f4e;
+  --color-pending: #c89b3c;
+  --color-rejected: #a13d2b;
+
+  --color-line: #d9cfb8;
+  --color-water: #3d6e8c;
+}
+
+@theme inline {
+  --color-paper: var(--color-paper);
+  --color-paper-raised: var(--color-paper-raised);
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-forest: var(--color-forest);
+  --color-forest-deep: var(--color-forest-deep);
+  --color-forest-light: var(--color-forest-light);
+  --color-clay: var(--color-clay);
+  --color-clay-deep: var(--color-clay-deep);
+  --color-approved: var(--color-approved);
+  --color-pending: var(--color-pending);
+  --color-rejected: var(--color-rejected);
+  --color-line: var(--color-line);
+  --color-water: var(--color-water);
+
+  --font-display: "Fraunces Variable", "Fraunces", serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+}
+
+body {
+  background: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--color-clay);
+  color: var(--color-paper-raised);
+}

@@ -1,0 +1,56 @@
+{
+  "type": "FeatureCollection",
+  "properties": {
+    "label": "Canopy Loss (pre/post 2005) Demo Overlay"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "MP Forest Canopy Loss A", "era": "pre-2005", "year": 2002 },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[77.78, 21.88], [77.85, 21.88], [77.85, 21.93], [77.78, 21.93], [77.78, 21.88]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "MP Forest Canopy Loss B", "era": "post-2005", "year": 2011 },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[77.92, 21.92], [77.99, 21.92], [77.99, 21.98], [77.92, 21.98], [77.92, 21.92]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Odisha Canopy Loss A", "era": "pre-2005", "year": 2004 },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[84.2, 20.3], [84.35, 20.3], [84.35, 20.45], [84.2, 20.45], [84.2, 20.3]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Odisha Canopy Loss B", "era": "post-2005", "year": 2014 },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[84.5, 20.6], [84.65, 20.6], [84.65, 20.75], [84.5, 20.75], [84.5, 20.6]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Telangana Canopy Loss A", "era": "post-2005", "year": 2016 },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[79.1, 17.2], [79.25, 17.2], [79.25, 17.35], [79.1, 17.35], [79.1, 17.2]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Tripura Canopy Loss A", "era": "pre-2005", "year": 2001 },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[91.5, 23.2], [91.65, 23.2], [91.65, 23.35], [91.5, 23.35], [91.5, 23.2]]]
+      }
+    }
+  ]
+}

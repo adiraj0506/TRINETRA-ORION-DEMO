@@ -1,0 +1,40 @@
+{
+  "type": "FeatureCollection",
+  "properties": {
+    "label": "Baseline / Admin Boundaries"
+  },
+  "features": [
+    {
+      "type": "Feature",
+      "properties": { "name": "Madhya Pradesh Boundary", "type": "state" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[74.0, 21.0], [82.5, 21.0], [82.5, 26.5], [74.0, 26.5], [74.0, 21.0]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Odisha Boundary", "type": "state" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[81.5, 18.0], [87.5, 18.0], [87.5, 22.5], [81.5, 22.5], [81.5, 18.0]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Telangana Boundary", "type": "state" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[77.2, 15.8], [81.8, 15.8], [81.8, 19.8], [77.2, 19.8], [77.2, 15.8]]]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": { "name": "Tripura Boundary", "type": "state" },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [[[91.1, 22.0], [92.4, 22.0], [92.4, 24.5], [91.1, 24.5], [91.1, 22.0]]]
+      }
+    }
+  ]
+}
