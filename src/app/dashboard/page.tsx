@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useMemo } from "react";
-import { fetchClaimsForMap } from "@/lib/queries";
+import { fetchClaimsForMap, executeClaimAction } from "@/lib/queries";
 import { useRole, MOCK_CURRENT_CLAIMANT_ID } from "@/lib/role-store";
 import { computeStats, type StateStats } from "@/lib/stats";
 import type { ClaimMapRow } from "@/lib/types";
@@ -35,18 +35,30 @@ export default function DashboardPage() {
       .finally(() => setLoading(false));
   }, []);
 
-  const handleUpdateStatus = (claimId: string, newStatus: ClaimMapRow["status"]) => {
-    setClaims((prev) =>
-      prev.map((c) =>
-        c.claim_id === claimId
-          ? {
-              ...c,
-              status: newStatus,
-              decided_on: newStatus !== "pending" ? new Date().toISOString().slice(0, 10) : null
-            }
-          : c
-      )
-    );
+  const handleUpdateStatus = async (claimId: string, newStatus: ClaimMapRow["status"]) => {
+    try {
+      if (newStatus === "approved" || newStatus === "rejected") {
+        const actionType = newStatus === "approved" ? "approve" : "reject";
+        await executeClaimAction(claimId, actionType, {
+          notes: newStatus === "approved" ? "Approved from Dashboard Queue." : undefined,
+          reason: newStatus === "rejected" ? "Rejected from Dashboard Queue." : undefined,
+        });
+      }
+      setClaims((prev) =>
+        prev.map((c) =>
+          c.claim_id === claimId
+            ? {
+                ...c,
+                status: newStatus,
+                decided_on: newStatus !== "pending" ? new Date().toISOString().slice(0, 10) : null
+              }
+            : c
+        )
+      );
+    } catch (err: any) {
+      console.error("Dashboard action failed:", err);
+      alert(`Action error: ${err.message}`);
+    }
   };
 
   const handleBatchWelfare = () => {

@@ -1,14 +1,26 @@
 import { supabase } from "@/lib/supabase";
 import type { ClaimMapRow } from "@/lib/types";
 import type { SchemeRow } from "@/lib/dss";
+import type { FullClaimDetails } from "@/lib/services/claim-service";
 
 /**
- * Fetches every claim with its joined claimant/state info and parcel
- * centroid, via the `claims_map` view (see supabase/day3_atlas_view.sql).
- * The dataset is small (~430 rows) so we fetch it all client-side and
- * filter in the browser rather than paginating.
+ * Fetches all claims with joined claimant/state info and parcel centroids.
+ * First tries internal Next.js API / database query, falling back to Supabase client.
  */
 export async function fetchClaimsForMap(): Promise<ClaimMapRow[]> {
+  try {
+    const res = await fetch("/api/claims", { cache: "no-store" });
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data as ClaimMapRow[];
+      }
+    }
+  } catch (err) {
+    console.warn("API /api/claims fetch failed, attempting client Supabase fetch:", err);
+  }
+
+  // Fallback to client Supabase instance
   const { data, error } = await supabase
     .from("claims_map")
     .select("*")
@@ -18,22 +30,66 @@ export async function fetchClaimsForMap(): Promise<ClaimMapRow[]> {
   return (data ?? []) as ClaimMapRow[];
 }
 
-/** Fetches the government scheme reference data used by the DSS. */
+/** Fetches full unified details for a single claim across all tabs. */
+export async function fetchClaimDetails(claimId: string): Promise<FullClaimDetails | null> {
+  const res = await fetch(`/api/claims/${claimId}`, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`Failed to load claim details: ${res.statusText}`);
+  }
+  return res.json();
+}
+
+/** Executes an administrative action on a claim (approve, reject, return, field_verification). */
+export async function executeClaimAction(
+  claimId: string,
+  action: "approve" | "reject" | "return" | "field_verification",
+  payload?: { notes?: string; reason?: string }
+): Promise<{ success: boolean; claimId: string; action: string }> {
+  const res = await fetch(`/api/claims/${claimId}/actions`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ action, ...payload }),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || "Action execution failed");
+  }
+
+  return res.json();
+}
+
+/** Submits a newly digitized and reviewed claim form into the database. */
+export async function submitClaimToDatabase(payload: any): Promise<{ success: boolean; claimId: string; claimantId: string }> {
+  const res = await fetch("/api/claims", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || "Submission failed");
+  }
+
+  return res.json();
+}
+
+/** Fetches government scheme reference data used by the DSS. */
 export async function fetchSchemes(): Promise<SchemeRow[]> {
   try {
     const { data, error } = await supabase
       .from("schemes")
-      .select("code, name, description, eligibility_json");
+      .select("code, name, description, eligibility_json, department, benefit_description");
 
     if (error) throw error;
     if (data && data.length > 0) {
       return data as SchemeRow[];
     }
   } catch (err) {
-    console.warn("fetchSchemes failed, using static fallback:", err);
+    console.warn("fetchSchemes failed, using default schemes:", err);
   }
 
-  // Static fallback schemes matching seed.sql
   return [
     {
       code: "PM_KISAN",
@@ -70,15 +126,12 @@ export async function fetchSchemes(): Promise<SchemeRow[]> {
 
 /** Fetches spatial dispute zones (canopy loss and restricted boundaries) from PostGIS. */
 export async function fetchDisputeZones(): Promise<any[]> {
-  const { data, error } = await supabase
-    .from("dispute_zones_map")
-    .select("*");
-
-  if (error) {
-    // Fall back to empty array and warn, letting client fall back to static geojson file
-    console.warn("fetchDisputeZones from Supabase failed, falling back to static files:", error.message);
-    return [];
+  try {
+    const { data, error } = await supabase.from("dispute_zones_map").select("*");
+    if (error) throw error;
+    if (data && data.length > 0) return data;
+  } catch (error: any) {
+    console.warn("fetchDisputeZones from Supabase failed, using static fallback:", error.message);
   }
-  return data ?? [];
+  return [];
 }
-

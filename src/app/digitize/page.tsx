@@ -57,6 +57,15 @@ export default function DigitizePage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedLang, setSelectedLang] = useState("eng");
   const [langWarning, setLangWarning] = useState<string | null>(null);
+  const [supplementaryDocs, setSupplementaryDocs] = useState<any[]>([]);
+
+  const handleAddSupplementaryDoc = (doc: any) => {
+    setSupplementaryDocs((prev) => [...prev, doc]);
+  };
+
+  const handleRemoveSupplementaryDoc = (docId: string) => {
+    setSupplementaryDocs((prev) => prev.filter((d) => d.id !== docId));
+  };
 
   async function runOcr(imageSource: string | File, langCode: string) {
     setError(null);
@@ -206,6 +215,9 @@ export default function DigitizePage() {
             onUseSample={handleUseSample}
             previewUrl={previewUrl}
             disabled={stage === "recognizing" || isCommunity}
+            supplementaryDocs={supplementaryDocs}
+            onAddSupplementaryDoc={handleAddSupplementaryDoc}
+            onRemoveSupplementaryDoc={handleRemoveSupplementaryDoc}
           />
         </div>
 
@@ -216,7 +228,13 @@ export default function DigitizePage() {
           )}
 
           {stage === "done" && (
-            <ReviewForm initialFields={fields} confidences={confidences} rawText={rawText} />
+            <ReviewForm
+              initialFields={fields}
+              confidences={confidences}
+              rawText={rawText}
+              previewUrl={previewUrl}
+              supplementaryDocs={supplementaryDocs}
+            />
           )}
 
           {stage === "idle" && !previewUrl && (

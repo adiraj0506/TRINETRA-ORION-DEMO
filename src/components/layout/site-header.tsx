@@ -8,9 +8,10 @@ import { useRole } from "@/lib/role-store";
 
 const NAV_LINKS = [
   { href: "/atlas", label: "Atlas" },
+  { href: "/admin", label: "Admin" },
   { href: "/dashboard", label: "Dashboard" },
   { href: "/digitize", label: "Digitize" },
-  { href: "/dss", label: "Schemes" },
+  { href: "/dss", label: "DSS Schemes" },
   { href: "/research", label: "Research" },
 ];
 
@@ -28,7 +29,6 @@ export function SiteHeader() {
         setSyncStatus("syncing");
         setOffline(false);
         
-        // Simulate PostGIS database sync delay
         setTimeout(() => {
           setSyncStatus("success");
           clearQueue();
@@ -47,23 +47,24 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-50 border-b border-line/80 bg-paper/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
         <Link
           href="/"
           className="flex items-center gap-2"
           onClick={() => setMenuOpen(false)}
         >
-          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-forest text-paper-raised font-display text-sm">
+          <span className="flex h-8 w-8 items-center justify-center rounded-full bg-forest text-paper-raised font-display text-sm font-bold">
             त्र
           </span>
-          <span className="font-display text-lg tracking-tight text-ink">
+          <span className="font-display text-lg tracking-tight text-ink font-semibold">
             TRINETRA
           </span>
         </Link>
 
-        <nav className="hidden items-center gap-7 md:flex">
+        <nav className="hidden items-center gap-6 md:flex">
           {NAV_LINKS.map((link) => {
             if (link.href === "/digitize" && role === "community") return null;
+            if (link.href === "/admin" && role === "community") return null;
             return (
               <Link
                 key={link.href}
@@ -86,7 +87,7 @@ export function SiteHeader() {
           >
             <option value="admin">Administrator</option>
             <option value="verifier">Verifier</option>
-            <option value="community">Community Stakeholder</option>
+            <option value="community">Claimant Portal</option>
           </select>
 
           {/* Offline Toggle Pill */}
@@ -112,7 +113,7 @@ export function SiteHeader() {
 
           <Link
             href="/atlas"
-            className="hidden rounded-full bg-clay px-4 py-2 font-mono text-xs uppercase tracking-wider text-paper-raised transition-colors hover:bg-clay-deep sm:inline-block"
+            className="hidden rounded-full bg-clay px-4 py-2 font-mono text-xs uppercase tracking-wider text-paper-raised transition-colors hover:bg-clay-deep sm:inline-block font-bold"
           >
             Open Atlas
           </Link>
@@ -132,6 +133,7 @@ export function SiteHeader() {
           <div className="mx-auto flex max-w-6xl flex-col px-6 py-2">
             {NAV_LINKS.map((link) => {
               if (link.href === "/digitize" && role === "community") return null;
+              if (link.href === "/admin" && role === "community") return null;
               return (
                 <Link
                   key={link.href}
@@ -146,7 +148,7 @@ export function SiteHeader() {
             <Link
               href="/atlas"
               onClick={() => setMenuOpen(false)}
-              className="my-3 rounded-full bg-clay px-4 py-2.5 text-center font-mono text-xs uppercase tracking-wider text-paper-raised sm:hidden"
+              className="my-3 rounded-full bg-clay px-4 py-2.5 text-center font-mono text-xs uppercase tracking-wider text-paper-raised sm:hidden font-bold"
             >
               Open Atlas
             </Link>

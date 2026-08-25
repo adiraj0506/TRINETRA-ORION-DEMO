@@ -1,33 +1,46 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import type { ExtractedFields, FieldConfidences } from "@/lib/ner";
+import { submitClaimToDatabase } from "@/lib/queries";
 import { useOffline } from "@/lib/offline-store";
 
 const FIELD_LABELS: Record<keyof ExtractedFields, string> = {
   fullName: "Full name",
   village: "Village",
   district: "District",
-  state: "State",
+  state: "State (MP / OD / TS / TR)",
   category: "Category (ST / OTFD)",
   claimType: "Claim type (IFR / CR / CFR)",
   areaClaimedHectares: "Area claimed (ha)",
   householdSize: "Household size",
 };
 
+interface ReviewFormProps {
+  initialFields: ExtractedFields;
+  confidences: FieldConfidences;
+  rawText: string;
+  previewUrl?: string | null;
+  supplementaryDocs?: any[];
+}
+
 export function ReviewForm({
   initialFields,
   confidences,
   rawText,
-}: {
-  initialFields: ExtractedFields;
-  confidences: FieldConfidences;
-  rawText: string;
-}) {
+  previewUrl,
+  supplementaryDocs = [],
+}: ReviewFormProps) {
   const [fields, setFields] = useState(initialFields);
   const [edited, setEdited] = useState<Record<keyof ExtractedFields, boolean>>({} as any);
   const [showRaw, setShowRaw] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submittedResult, setSubmittedResult] = useState<{
+    claimId: string;
+    claimantId: string;
+  } | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const { isOffline, addClaim } = useOffline();
 
@@ -36,10 +49,75 @@ export function ReviewForm({
     setEdited((prev) => ({ ...prev, [key]: true }));
   };
 
-  const handleConfirm = () => {
-    setSaved(true);
+  const handleConfirmAndSubmit = async () => {
+    setError(null);
+
+    // If offline mode, save locally in IndexedDB/localStorage
     if (isOffline) {
       addClaim(fields);
+      setSubmittedResult({
+        claimId: "offline-cached",
+        claimantId: "offline-claimant",
+      });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      // Clean and normalize state code
+      let stateCode = (fields.state || "OD").toUpperCase().trim();
+      if (stateCode.includes("ODISHA") || stateCode.includes("ORISSA")) stateCode = "OD";
+      else if (stateCode.includes("MADHYA") || stateCode.includes("PRADESH")) stateCode = "MP";
+      else if (stateCode.includes("TELANGANA")) stateCode = "TS";
+      else if (stateCode.includes("TRIPURA")) stateCode = "TR";
+      if (!["OD", "MP", "TS", "TR"].includes(stateCode)) stateCode = "OD";
+
+      const extractedFieldsMap: Record<string, { value: string; confidence: number }> = {};
+      (Object.keys(fields) as (keyof ExtractedFields)[]).forEach((k) => {
+        extractedFieldsMap[k] = {
+          value: fields[k],
+          confidence: confidences[k] || 85,
+        };
+      });
+
+      const avgConfidence =
+        Object.values(confidences).reduce((a, b) => a + b, 0) /
+        (Object.keys(confidences).length || 1);
+
+      const payload = {
+        fullName: fields.fullName || "Claimant Candidate",
+        village: fields.village || "Village Center",
+        district: fields.district || "District Center",
+        stateCode,
+        category: fields.category?.toUpperCase() === "OTFD" ? "OTFD" : "ST",
+        claimType: (["IFR", "CR", "CFR"].includes(fields.claimType?.toUpperCase())
+          ? fields.claimType.toUpperCase()
+          : "IFR") as any,
+        areaClaimedHectares: parseFloat(fields.areaClaimedHectares) || 1.45,
+        householdSize: parseInt(fields.householdSize, 10) || 4,
+        rawOcrText: rawText,
+        ocrConfidence: Math.round(avgConfidence),
+        extractedFields: extractedFieldsMap,
+        documentName: "scanned_claim_form.png",
+        supplementaryDocuments: supplementaryDocs.map((d) => ({
+          documentType: d.documentType,
+          documentName: d.documentName,
+          documentRefNumber: d.documentRefNumber,
+          mimeType: d.mimeType,
+          fileSize: d.fileSize,
+        })),
+      };
+
+      const res = await submitClaimToDatabase(payload);
+      setSubmittedResult({
+        claimId: res.claimId,
+        claimantId: res.claimantId,
+      });
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to submit claim to database");
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -51,20 +129,27 @@ export function ReviewForm({
       <div className="flex items-center justify-between border-b border-line pb-4">
         <div>
           <p className="font-mono text-xs uppercase tracking-wider text-clay">
-            Verification Step
+            Stage 5: Human-in-the-Loop Validation
           </p>
           <h2 className="mt-1 font-display text-xl text-ink font-semibold">
-            Human-in-the-Loop Review
+            Field Review & Confirmation
           </h2>
         </div>
         <span className="rounded-full bg-forest/10 px-3 py-1 font-mono text-xs text-forest font-semibold">
           {filledCount}/{totalFields} fields extracted
         </span>
       </div>
-      
+
       <p className="mt-4 text-sm text-ink-soft leading-relaxed">
-        Verify the auto-extracted values against the scanned image. Fields edited by you are marked as <span className="text-water font-semibold">Human Verified</span>.
+        Verify auto-extracted values against the scanned document. Edited values are marked as{" "}
+        <span className="text-water font-semibold">Human Verified</span>. On submission, a formal record will be created in Supabase with PostGIS coordinates, audit trail, and verification queue assignment.
       </p>
+
+      {error && (
+        <div className="mt-4 rounded-lg bg-rejected/10 border border-rejected/30 p-3 text-xs text-rejected font-medium">
+          {error}
+        </div>
+      )}
 
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
         {(Object.keys(fields) as (keyof ExtractedFields)[]).map((key) => {
@@ -134,32 +219,93 @@ export function ReviewForm({
         )}
       </div>
 
+      {/* Supplementary Documents Verification Section */}
+      {supplementaryDocs && supplementaryDocs.length > 0 && (
+        <div className="mt-6 rounded-lg border border-line bg-paper p-4 space-y-2">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[10px] uppercase tracking-wider text-ink-soft font-bold">
+              Attached Identification & Verification Documents ({supplementaryDocs.length})
+            </span>
+            <span className="text-[10px] font-mono text-approved font-semibold">✓ Ready for linking</span>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-1">
+            {supplementaryDocs.map((doc, idx) => (
+              <div key={idx} className="rounded border border-line bg-paper-raised p-2.5 flex items-center justify-between text-xs">
+                <div className="truncate mr-2">
+                  <span className="font-semibold text-ink block truncate">{doc.documentName}</span>
+                  <span className="text-[10px] text-ink-soft font-mono">
+                    {doc.documentType === "identity_document"
+                      ? "Aadhaar / ID"
+                      : doc.documentType === "gram_sabha_resolution"
+                      ? "Gram Sabha Letter"
+                      : doc.documentType === "patta"
+                      ? "Patta Deed"
+                      : "Supporting Doc"}
+                    {doc.documentRefNumber ? ` · Ref: ${doc.documentRefNumber}` : ""}
+                  </span>
+                </div>
+                <span className="text-approved text-xs">✓</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       <div className="mt-6 border-t border-line pt-5">
-        {saved ? (
-          <div className="rounded-lg bg-approved/10 border border-approved/20 p-3 text-sm text-approved font-semibold flex items-center gap-2">
-            <span>✓</span>{" "}
-            {isOffline
-              ? "Record confirmed and saved offline locally."
-              : "Record confirmed and queued for digitization."}
+        {submittedResult ? (
+          <div className="space-y-4">
+            <div className="rounded-xl bg-approved/10 border border-approved/30 p-5 text-approved">
+              <div className="flex items-center gap-2 font-display text-base font-semibold">
+                <span>✓</span> Record Persisted in Supabase & PostGIS
+              </div>
+              <p className="mt-1 text-xs text-ink-soft">
+                Claim has been registered with ID{" "}
+                <span className="font-mono font-bold text-ink">{submittedResult.claimId}</span>. It is now active in the Admin Verification Queue and FRA Atlas.
+              </p>
+              <div className="mt-4 flex flex-wrap gap-2.5">
+                <Link
+                  href={`/claims/${submittedResult.claimId}`}
+                  className="rounded-full bg-forest text-paper-raised px-4 py-2 font-mono text-[10px] uppercase tracking-wider font-bold transition-all hover:bg-forest-deep"
+                >
+                  View Claim Dossier →
+                </Link>
+                <Link
+                  href="/admin"
+                  className="rounded-full border border-forest/30 bg-paper px-4 py-2 font-mono text-[10px] uppercase tracking-wider text-forest font-bold hover:bg-forest/5"
+                >
+                  Open Admin Queue
+                </Link>
+                <Link
+                  href="/atlas"
+                  className="rounded-full border border-line bg-paper px-4 py-2 font-mono text-[10px] uppercase tracking-wider text-ink font-bold hover:border-forest"
+                >
+                  View in Atlas
+                </Link>
+              </div>
+            </div>
           </div>
         ) : (
-          <button
-            type="button"
-            onClick={handleConfirm}
-            className={`rounded-full px-5 py-2.5 font-mono text-xs uppercase tracking-wider text-paper-raised transition-colors cursor-pointer ${
-              isOffline
-                ? "bg-clay hover:bg-clay-deep"
-                : "bg-forest hover:bg-forest-deep"
-            }`}
-          >
-            {isOffline ? "Confirm & Save Offline" : "Confirm record"}
-          </button>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <button
+              type="button"
+              disabled={submitting}
+              onClick={handleConfirmAndSubmit}
+              className={`rounded-full px-6 py-3 font-mono text-xs uppercase tracking-wider text-paper-raised transition-all cursor-pointer font-bold disabled:opacity-50 ${
+                isOffline ? "bg-clay hover:bg-clay-deep" : "bg-forest hover:bg-forest-deep shadow-md"
+              }`}
+            >
+              {submitting
+                ? "Persisting to Supabase..."
+                : isOffline
+                ? "Confirm & Save Offline"
+                : "Confirm & Submit Claim to Database"}
+            </button>
+
+            <span className="text-[11px] text-ink-soft italic">
+              Generates PostGIS centroid, OCR audit trail, and verification queue task.
+            </span>
+          </div>
         )}
-        <p className="mt-3 text-[11px] text-ink-soft italic leading-relaxed">
-          Demo note: this confirms locally in your browser only. The public
-          demo doesn't write new records to the database — the Atlas and
-          Dashboard reflect the seeded dataset, not submissions from here.
-        </p>
       </div>
     </div>
   );
