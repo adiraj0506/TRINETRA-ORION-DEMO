@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 
 export type UserRole = "community" | "verifier" | "admin";
 
+export const MOCK_CURRENT_CLAIMANT_ID = "6051fe98-5dd3-4c7c-b14a-cb140a28f7eb";
+
 const listeners = new Set<() => void>();
 let currentRole: UserRole = "admin"; // default to admin so the demo starts fully unlocked!
 

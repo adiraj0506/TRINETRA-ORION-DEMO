@@ -6,8 +6,10 @@ import { evaluateSchemes, type SchemeRow } from "@/lib/dss";
 import type { ClaimMapRow } from "@/lib/types";
 import { ClaimantPicker } from "@/components/dss/claimant-picker";
 import { DssResults } from "@/components/dss/dss-results";
+import { useRole } from "@/lib/role-store";
 
 export default function DssPage() {
+  const { isCommunity } = useRole();
   const [claims, setClaims] = useState<ClaimMapRow[]>([]);
   const [schemes, setSchemes] = useState<SchemeRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -31,9 +33,24 @@ export default function DssPage() {
       .finally(() => setLoading(false));
   }, []);
 
+  // Filter claims based on role (Stakeholder sees only their own claims)
+  const roleFilteredClaims = useMemo(() => {
+    if (isCommunity) {
+      return claims.filter((c) => c.full_name === "Kunti Kondh");
+    }
+    return claims;
+  }, [claims, isCommunity]);
+
+  // Pre-select the stakeholder's claim once loaded
+  useEffect(() => {
+    if (isCommunity && roleFilteredClaims.length > 0 && !selectedClaimId) {
+      setSelectedClaimId(roleFilteredClaims[0].claim_id);
+    }
+  }, [isCommunity, roleFilteredClaims, selectedClaimId]);
+
   const selectedClaim = useMemo(
-    () => claims.find((c) => c.claim_id === selectedClaimId) ?? null,
-    [claims, selectedClaimId]
+    () => roleFilteredClaims.find((c) => c.claim_id === selectedClaimId) ?? null,
+    [roleFilteredClaims, selectedClaimId]
   );
 
   const results = useMemo(() => {
@@ -72,7 +89,7 @@ export default function DssPage() {
         <div className="grid grid-cols-1 overflow-hidden rounded-xl border border-line lg:grid-cols-[360px_1fr]">
           <div className="h-[50vh] min-h-[340px] border-b border-line lg:h-[70vh] lg:min-h-[420px] lg:border-b-0 lg:border-r">
             <ClaimantPicker
-              claims={claims}
+              claims={roleFilteredClaims}
               selectedClaimId={selectedClaimId}
               onSelect={setSelectedClaimId}
             />

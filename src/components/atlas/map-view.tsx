@@ -7,6 +7,7 @@ import type { ClaimMapRow } from "@/lib/types";
 import { STATUS_COLORS } from "@/lib/types";
 import { AssetDetectionLayer } from "@/components/atlas/asset-detection-layer";
 import assetData from "@/data/asset-detection-demo.json";
+import { useRole } from "@/lib/role-store";
 
 import adminBoundariesData from "@/data/admin-boundaries-demo.json";
 import canopyLossFallback from "@/data/canopy-loss-demo.json";
@@ -81,6 +82,7 @@ export function MapView({
   showAssetLayer: boolean;
   disputeZones?: any[];
 }) {
+  const { role } = useRole();
   const selectedClaim = useMemo(
     () => claims.find((c) => c.claim_id === selectedClaimId),
     [claims, selectedClaimId]
@@ -210,15 +212,16 @@ export function MapView({
       {claims.map((claim) => {
         const isSelected = claim.claim_id === selectedClaimId;
         const hasDispute = !!(claim.has_canopy_violation || claim.has_restricted_zone_overlap);
+        const isPendingAndVerifier = claim.status === "pending" && role === "verifier";
 
         return (
           <CircleMarker
             key={claim.claim_id}
             center={[claim.lat, claim.lng]}
-            radius={isSelected ? 9 : 6}
+            radius={isSelected ? 9 : (isPendingAndVerifier ? 9 : 6)}
             pathOptions={{
-              color: isSelected ? "#1b2420" : STATUS_COLORS[claim.status],
-              weight: isSelected ? 2 : 1,
+              color: isSelected ? "#1b2420" : (isPendingAndVerifier ? "#d97706" : STATUS_COLORS[claim.status]),
+              weight: isSelected ? 2 : (isPendingAndVerifier ? 3 : 1),
               fillColor: STATUS_COLORS[claim.status],
               fillOpacity: 0.85,
             }}
@@ -229,7 +232,7 @@ export function MapView({
             <Tooltip direction="top" offset={[0, -6]} opacity={1}>
               <div className="font-sans text-xs flex flex-col gap-0.5 bg-paper p-1 rounded border border-line shadow-sm">
                 <span className="font-bold text-ink">
-                  {claim.village}, {claim.district} — {claim.status}
+                  {isPendingAndVerifier ? "⚠️ [REVIEW QUEUE] " : ""}{claim.village}, {claim.district} — {claim.status}
                 </span>
                 {hasDispute && (
                   <span className="text-rejected font-semibold flex items-center gap-1 text-[10px]">

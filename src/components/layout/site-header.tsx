@@ -62,15 +62,18 @@ export function SiteHeader() {
         </Link>
 
         <nav className="hidden items-center gap-7 md:flex">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="font-mono text-xs uppercase tracking-wider text-ink-soft transition-colors hover:text-forest"
-            >
-              {link.label}
-            </Link>
-          ))}
+          {NAV_LINKS.map((link) => {
+            if (link.href === "/digitize" && role === "community") return null;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="font-mono text-xs uppercase tracking-wider text-ink-soft transition-colors hover:text-forest"
+              >
+                {link.label}
+              </Link>
+            );
+          })}
         </nav>
 
         <div className="flex items-center gap-3">
@@ -127,16 +130,19 @@ export function SiteHeader() {
       {menuOpen && (
         <nav className="border-t border-line bg-paper md:hidden">
           <div className="mx-auto flex max-w-6xl flex-col px-6 py-2">
-            {NAV_LINKS.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setMenuOpen(false)}
-                className="border-b border-line/60 py-3 font-mono text-xs uppercase tracking-wider text-ink-soft last:border-b-0 hover:text-forest"
-              >
-                {link.label}
-              </Link>
-            ))}
+            {NAV_LINKS.map((link) => {
+              if (link.href === "/digitize" && role === "community") return null;
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="border-b border-line/60 py-3 font-mono text-xs uppercase tracking-wider text-ink-soft last:border-b-0 hover:text-forest"
+                >
+                  {link.label}
+                </Link>
+              );
+            })}
             <Link
               href="/atlas"
               onClick={() => setMenuOpen(false)}

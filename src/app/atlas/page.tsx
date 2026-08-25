@@ -7,6 +7,7 @@ import type { ClaimMapRow, ClaimStatus, StateCode } from "@/lib/types";
 import { AtlasFilters } from "@/components/atlas/atlas-filters";
 import { ClaimDetailPanel } from "@/components/atlas/claim-detail-panel";
 import { AssetLayerToggle } from "@/components/atlas/asset-layer-toggle";
+import { useRole } from "@/lib/role-store";
 
 // Leaflet touches `window`, so it can only render on the client.
 const MapView = dynamic(
@@ -15,6 +16,7 @@ const MapView = dynamic(
 );
 
 export default function AtlasPage() {
+  const { role, isCommunity, isVerifier, isAdmin } = useRole();
   const [claims, setClaims] = useState<ClaimMapRow[]>([]);
   const [disputeZones, setDisputeZones] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -47,14 +49,25 @@ export default function AtlasPage() {
       .catch((err) => console.warn("Failed to load dispute zones:", err));
   }, []);
 
+  // Filter claims based on the active role
+  const roleFilteredClaims = useMemo(() => {
+    if (isCommunity) {
+      // Stakeholder sees only their own claims (Kunti Kondh / claimant_id: 6051fe98-5dd3-4c7c-b14a-cb140a28f7eb)
+      return claims.filter((c) => c.full_name === "Kunti Kondh");
+    }
+    return claims; // Verifier and Admin see all claims
+  }, [claims, isCommunity]);
+
   const filtered = useMemo(() => {
-    return claims.filter((c) => {
+    return roleFilteredClaims.filter((c) => {
+      // Stakeholder doesn't need active filters
+      if (isCommunity) return true;
       if (selectedState !== "ALL" && c.state_code !== selectedState)
         return false;
       if (!activeStatuses.has(c.status)) return false;
       return true;
     });
-  }, [claims, selectedState, activeStatuses]);
+  }, [roleFilteredClaims, selectedState, activeStatuses, isCommunity]);
 
   const selectedClaim = useMemo(
     () => filtered.find((c) => c.claim_id === selectedClaimId) ?? null,
@@ -93,22 +106,47 @@ export default function AtlasPage() {
         </div>
       )}
 
+      {/* Role switch bar notification */}
+      <div className="mb-4 inline-flex items-center gap-2 rounded-lg border border-line bg-paper px-3 py-1.5 font-mono text-[10px] text-ink-soft">
+        Current Mode: <span className="font-bold uppercase text-clay">{role}</span>
+        {isCommunity && <span className="text-ink-soft italic">(Filtered to claimant: Kunti Kondh)</span>}
+        {role === "verifier" && <span className="text-ink-soft italic">(All pending claims flagged/pulsing on map)</span>}
+      </div>
+
       <div className="grid grid-cols-1 gap-0 overflow-hidden rounded-xl border border-line lg:grid-cols-[280px_1fr_320px]">
         <div className="border-b border-line lg:border-b-0 lg:border-r">
-          <AtlasFilters
-            selectedState={selectedState}
-            onStateChange={setSelectedState}
-            activeStatuses={activeStatuses}
-            onToggleStatus={toggleStatus}
-            total={claims.length}
-            visibleCount={filtered.length}
-          />
-          <div className="border-t border-line">
-            <AssetLayerToggle
-              active={showAssetLayer}
-              onToggle={() => setShowAssetLayer((s) => !s)}
+          {isCommunity ? (
+            <div className="border-b border-line p-6">
+              <p className="font-mono text-xs uppercase tracking-wider text-clay">
+                FRA Atlas
+              </p>
+              <h1 className="mt-2 font-display text-2xl text-ink">My Claims</h1>
+              <p className="mt-4 text-xs text-ink-soft leading-relaxed">
+                Viewing claims registered under your claimant profile: <strong>Kunti Kondh</strong>.
+              </p>
+              <p className="mt-4 font-mono text-[10px] text-ink-soft">
+                Showing {filtered.length} of {filtered.length} claim
+              </p>
+            </div>
+          ) : (
+            <AtlasFilters
+              selectedState={selectedState}
+              onStateChange={setSelectedState}
+              activeStatuses={activeStatuses}
+              onToggleStatus={toggleStatus}
+              total={roleFilteredClaims.length}
+              visibleCount={filtered.length}
             />
-          </div>
+          )}
+          {/* Hide/Disable asset layer toggle for non-admin roles as requested */}
+          {isAdmin && (
+            <div className="border-t border-line">
+              <AssetLayerToggle
+                active={showAssetLayer}
+                onToggle={() => setShowAssetLayer((s) => !s)}
+              />
+            </div>
+          )}
         </div>
 
         <div className="relative h-[70vh] min-h-[420px]">
@@ -123,8 +161,8 @@ export default function AtlasPage() {
               claims={filtered}
               selectedClaimId={selectedClaimId}
               onSelect={setSelectedClaimId}
-              showAssetLayer={showAssetLayer}
-              disputeZones={disputeZones}
+              showAssetLayer={isAdmin ? showAssetLayer : false}
+              disputeZones={isAdmin ? disputeZones : []} // Show dispute layers for admin only
             />
           )}
         </div>
