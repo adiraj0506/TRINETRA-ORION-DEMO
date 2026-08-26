@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
 
 const PAPER_URL =
   "https://www.taylorfrancis.com/chapters/edit/10.1201/9781003743767-47/trinetra-tribal-rights-intelligence-network-empowerment-technology-research-analysis-shreya-kesarwani-suryansh-mishra-tina-sahu-suchitra";
@@ -23,18 +25,16 @@ const KEYWORDS = [
 
 export default function ResearchPage() {
   return (
-    <div className="mx-auto max-w-3xl px-6 py-16">
-      <p className="font-mono text-xs uppercase tracking-wider text-clay">
-        Published research
-      </p>
-      <h1 className="mt-3 font-display text-4xl text-ink md:text-5xl">
-        The paper behind this build
-      </h1>
-      <p className="mt-4 text-ink-soft">
-        Everything on this site — the statistics, the state comparisons,
-        the benchmark numbers — is drawn directly from the published
-        research this project is based on, not invented for the demo.
-      </p>
+    <div className="mx-auto max-w-4xl px-6 py-10">
+      <PageHeader
+        eyebrow="Empirical Studies & Publications"
+        title="Research & Evidence"
+        description="Everything on this platform — the statistics, the four-state comparisons, the benchmark numbers — is grounded directly in published peer-reviewed research."
+      >
+        <Button href={PAPER_URL} target="_blank" rel="noopener noreferrer" variant="primary" size="sm">
+          Read on CRC Press ↗
+        </Button>
+      </PageHeader>
 
       {/* Citation card */}
       <div className="mt-10 rounded-xl border border-line bg-paper-raised p-6">
@@ -184,17 +184,6 @@ export default function ResearchPage() {
             </span>
           ))}
         </div>
-      </section>
-
-      {/* Builder credit */}
-      <section className="mt-12 border-t border-line pt-8 pb-8">
-        <p className="text-xs uppercase tracking-wider text-ink-soft">
-          About this build
-        </p>
-        <p className="mt-3 text-ink-soft">
-          This live implementation was independently designed and built by
-          Shreya Kesarwani, based on the published research above.
-        </p>
       </section>
     </div>
   );

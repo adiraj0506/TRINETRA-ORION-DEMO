@@ -11,6 +11,8 @@ import { RateComparisonChart } from "@/components/dashboard/rate-comparison-char
 import { StatusBreakdownChart } from "@/components/dashboard/status-breakdown-chart";
 import { DigitizationProgress } from "@/components/dashboard/digitization-progress";
 import { ConvergenceCardModal } from "@/components/dss/convergence-card-modal";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
 
 export default function DashboardPage() {
   const { role, isCommunity, isVerifier, isAdmin } = useRole();
@@ -119,42 +121,40 @@ export default function DashboardPage() {
   const rejectedCount = claims.filter((c) => c.status === "rejected").length;
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16">
-      {/* Header section based on role */}
-      <div>
-        <p className="font-mono text-xs uppercase tracking-wider text-clay">
-          {isCommunity
+    <div className="mx-auto max-w-7xl px-6 py-10">
+      <PageHeader
+        eyebrow={
+          isCommunity
             ? "Stakeholder Portal"
             : role === "verifier"
             ? "Verification Workspace"
-            : "Administrator Dashboard"}
-        </p>
-        <h1 className="mt-3 font-display text-4xl text-ink md:text-5xl">
-          {isCommunity
+            : "State & National Telemetry"
+        }
+        title={
+          isCommunity
             ? "My Forest Rights Claims"
             : role === "verifier"
             ? "Verification Queue"
-            : "The numbers, by state"}
-        </h1>
-        <p className="mt-4 max-w-2xl text-ink-soft">
-          {isCommunity
+            : "Analytics Dashboard"
+        }
+        description={
+          isCommunity
             ? "Track the real-time processing status, geospatial verification, and scheme eligibility matching of your FRA claims."
             : role === "verifier"
             ? "Verify and decide on outstanding forest land title requests. View pending GPS polygons and satellite overlay indicators."
-            : "Every figure here is computed live from the same claim records shown on the Atlas — not a static export."}
-        </p>
-      </div>
-
-      {/* Role Switcher Hint Widget (Cosmetic & informative) */}
-      <div className="mt-6 inline-flex items-center gap-2 rounded-lg border border-line bg-paper px-3 py-1.5 font-mono text-[10px] text-ink-soft">
-        Current Mode:{" "}
-        <span className="font-bold uppercase text-clay">{role}</span>
-        {isCommunity && (
-          <span className="text-[10px] text-ink-soft italic">
-            (Filtered to Claimant: Kunti Kondh)
-          </span>
-        )}
-      </div>
+            : "Every figure here is computed live from the same claim records shown on the Atlas — not a static export."
+        }
+        badge={
+          <div className="inline-flex items-center gap-2 rounded-full border border-line bg-paper px-3 py-1 font-mono text-[10px] text-ink-soft">
+            <span>Mode:</span>
+            <span className="font-bold uppercase text-clay">{role}</span>
+          </div>
+        }
+      >
+        <Button href="/atlas" variant="secondary" size="sm">
+          Open FRA Atlas
+        </Button>
+      </PageHeader>
 
       {/* 1. STAKEHOLDER VIEW */}
       {isCommunity && (

@@ -9,22 +9,26 @@ const PILLARS = [
   {
     href: "/atlas",
     title: "FRA Atlas",
-    body: "Every claim, mapped by status, across all four states — a single source of truth instead of four disconnected paper trails.",
+    eyebrow: "Spatial WebGIS Engine",
+    body: "Every claim, mapped by status, across all four states — a single source of truth instead of disconnected paper files.",
   },
   {
     href: "/digitize",
-    title: "Digitization",
-    body: "OCR and NER turn scanned legacy claim forms into structured, searchable records — with a human reviewing every extraction.",
+    title: "Claim Digitization",
+    eyebrow: "OCR & Document Processing",
+    body: "OCR and NER turn scanned legacy claim forms into structured, searchable records — with human-in-the-loop validation.",
   },
   {
     href: "/dss",
-    title: "Decision Support",
-    body: "Titleholders matched automatically to PM-KISAN, MGNREGA, JJM, and DAJGUA — schemes they're eligible for but may never hear about.",
+    title: "Decision Support System",
+    eyebrow: "Scheme Convergence Engine",
+    body: "Titleholders matched deterministically to PM-KISAN, MGNREGA, JJM, and DAJGUA post-title welfare programmes.",
   },
   {
     href: "/dashboard",
-    title: "Live Dashboard",
-    body: "Approval rate, conflict rate, and digitization progress, tracked by state — the numbers policymakers currently can't see in one place.",
+    title: "Analytics Dashboard",
+    eyebrow: "State & National Telemetry",
+    body: "Live telemetry computed directly from registered claims — track digitization pace, approval rates, and spatial disputes.",
   },
 ];
 
@@ -35,30 +39,29 @@ export default function Home() {
       <section className="mx-auto max-w-6xl px-6 pt-16 pb-20 md:pt-24 md:pb-28">
         <div className="grid gap-12 md:grid-cols-2 md:items-center md:gap-8">
           <div>
-            <h1 className="mt-4 font-display text-4xl leading-[1.08] text-ink sm:text-5xl sm:leading-[1.05] md:text-6xl">
+            <p className="font-mono text-xs uppercase tracking-widest text-clay font-bold">
+              Tribal Rights Intelligent Network
+            </p>
+            <h1 className="mt-3 font-display text-4xl leading-[1.08] text-ink sm:text-5xl sm:leading-[1.05] md:text-6xl font-semibold">
               Nearly 51 lakh forest rights claims. Only 49% became titles.
             </h1>
-            <p className="mt-6 max-w-xl text-lg text-ink-soft">
+            <p className="mt-6 max-w-xl text-base text-ink-soft leading-relaxed">
               Across Madhya Pradesh, Odisha, Telangana, and Tripura, the
-              Forest Rights Act promises land titles to tribal and
-              forest-dwelling communities. In practice, claims sit scattered
-              across paper files, disconnected portals, and inconsistent
-              documentation — with no shared way to see where a claim stands.
-              TRINETRA is a direct implementation of the published research
-              behind this project.
+              Forest Rights Act promises statutory land titles to tribal and
+              forest-dwelling communities. TRINETRA provides an integrated WebGIS Atlas, OCR digitization pipeline, and Decision Support System built on published research.
             </p>
             <div className="mt-8 flex flex-wrap gap-4">
               <Link
                 href="/atlas"
-                className="rounded-full bg-forest px-6 py-3 font-mono text-xs uppercase tracking-wider text-paper-raised transition-colors hover:bg-forest-deep"
+                className="rounded-full bg-forest px-6 py-3 font-mono text-xs uppercase tracking-wider text-paper-raised font-bold transition-all hover:bg-forest-deep shadow-xs"
               >
-                Open the Atlas
+                Open FRA Atlas
               </Link>
               <Link
                 href="/research"
-                className="rounded-full border border-line px-6 py-3 font-mono text-xs uppercase tracking-wider text-ink transition-colors hover:border-forest hover:text-forest"
+                className="rounded-full border border-line bg-paper px-6 py-3 font-mono text-xs uppercase tracking-wider text-ink font-semibold transition-all hover:border-forest hover:text-forest"
               >
-                Read the research
+                View Research
               </Link>
             </div>
           </div>
@@ -276,15 +279,15 @@ export default function Home() {
           <div className="mt-8 flex flex-wrap justify-center gap-4">
             <Link
               href="/atlas"
-              className="rounded-full bg-clay px-6 py-3 font-mono text-xs uppercase tracking-wider text-paper-raised transition-colors hover:bg-clay-deep"
+              className="rounded-full bg-clay px-6 py-3 font-mono text-xs uppercase tracking-wider text-paper-raised font-bold transition-all hover:bg-clay-deep shadow-xs"
             >
-              Open the Atlas
+              Open FRA Atlas
             </Link>
             <Link
               href="/dashboard"
-              className="rounded-full border border-paper-raised/40 px-6 py-3 font-mono text-xs uppercase tracking-wider text-paper-raised transition-colors hover:border-paper-raised"
+              className="rounded-full border border-paper-raised/40 bg-transparent px-6 py-3 font-mono text-xs uppercase tracking-wider text-paper-raised font-semibold transition-all hover:border-paper-raised hover:bg-paper-raised/10"
             >
-              View the dashboard
+              View Analytics Dashboard
             </Link>
           </div>
         </div>

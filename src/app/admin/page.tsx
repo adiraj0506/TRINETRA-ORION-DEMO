@@ -11,6 +11,8 @@ import type { ClaimMapRow, ClaimStatus, StateCode, ClaimType } from "@/lib/types
 import { CLAIM_TYPE_LABELS, STATUS_LABELS } from "@/lib/types";
 import { Stat } from "@/components/marketing/stat";
 import { ConvergenceCardModal } from "@/components/dss/convergence-card-modal";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
 import type { FullClaimDetails } from "@/lib/services/claim-service";
 
 export default function AdminConsolePage() {
@@ -183,36 +185,20 @@ export default function AdminConsolePage() {
   }, [claims, filterState, filterStatus, filterClaimType, searchQuery]);
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-12">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 border-b border-line pb-6">
-        <div>
-          <p className="font-mono text-xs uppercase tracking-wider text-clay font-bold">
-            Executive Command & Decision Center
-          </p>
-          <h1 className="mt-1 font-display text-3xl text-ink font-semibold md:text-4xl">
-            Admin Verification Console
-          </h1>
-          <p className="mt-2 text-sm text-ink-soft max-w-2xl">
-            Authorize, verify, and resolve Forest Rights Act title requests. Every decision updates the PostgreSQL database, PostGIS boundaries, and live Atlas.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Link
-            href="/digitize"
-            className="rounded-full bg-forest text-paper-raised px-4 py-2 font-mono text-xs uppercase tracking-wider font-bold transition-all hover:bg-forest-deep shadow-sm"
-          >
-            + Digitise New Claim
-          </Link>
-          <Link
-            href="/atlas"
-            className="rounded-full border border-line bg-paper px-4 py-2 font-mono text-xs uppercase tracking-wider text-ink font-semibold hover:border-forest"
-          >
-            Open Live Atlas
-          </Link>
-        </div>
-      </div>
+    <div className="mx-auto max-w-7xl px-6 py-10">
+      {/* Canonical Header */}
+      <PageHeader
+        eyebrow="Executive Command & Decision Center"
+        title="Administrator Console"
+        description="Authorize, verify, and resolve Forest Rights Act title requests. Every decision updates the PostgreSQL database, PostGIS boundaries, and live Atlas."
+      >
+        <Button href="/digitize" variant="primary" size="sm">
+          + Digitize New Claim
+        </Button>
+        <Button href="/atlas" variant="secondary" size="sm">
+          Open FRA Atlas
+        </Button>
+      </PageHeader>
 
       {error && (
         <div className="mt-6 rounded-lg border border-rejected/30 bg-rejected/5 p-4 text-sm text-rejected">

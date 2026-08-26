@@ -4,6 +4,8 @@ import { CLAIM_TYPE_LABELS, STATUS_LABELS } from "@/lib/types";
 import type { SchemeEligibilityResult } from "@/lib/dss";
 import { ConvergenceCardModal } from "@/components/dss/convergence-card-modal";
 import { useRole } from "@/lib/role-store";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Button } from "@/components/ui/button";
 
 export function DssResults({
   claim,
@@ -35,26 +37,29 @@ export function DssResults({
     <div className="h-full overflow-y-auto p-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="font-display text-2xl text-ink font-semibold">{claim.full_name}</h2>
+          <div className="flex items-center gap-2.5">
+            <h2 className="font-display text-2xl text-ink font-semibold">{claim.full_name}</h2>
+            <StatusBadge status={claim.status} size="sm" />
+          </div>
           <p className="mt-1 text-sm text-ink-soft">
             {claim.village}, {claim.district} — {claim.state_name}
           </p>
         </div>
         {isAdmin && (
-          <button
+          <Button
             onClick={() => setShowReferrals(true)}
-            type="button"
-            className="shrink-0 rounded-full border border-forest/30 bg-forest/5 text-forest px-4 py-2 font-mono text-xs uppercase tracking-wider font-bold transition-all hover:bg-forest/10 flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+            variant="clay"
+            size="sm"
           >
-            📄 Generate Referral Package
-          </button>
+            📄 Generate Welfare Package
+          </Button>
         )}
       </div>
       <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 font-mono text-xs text-ink-soft">
         <span>{CLAIM_TYPE_LABELS[claim.claim_type]}</span>
         <span>{claim.area_claimed_hectares} ha</span>
         <span>{claim.category}</span>
-        <span>{STATUS_LABELS[claim.status]}</span>
+        {claim.ulpin && <span>ULPIN: {claim.ulpin}</span>}
       </div>
 
       <div className="mt-6 flex items-center gap-2 border-t border-line pt-4">

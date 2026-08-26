@@ -8,6 +8,8 @@ import { AtlasFilters } from "@/components/atlas/atlas-filters";
 import { ClaimDetailPanel } from "@/components/atlas/claim-detail-panel";
 import { AssetLayerToggle } from "@/components/atlas/asset-layer-toggle";
 import { useRole } from "@/lib/role-store";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 // Leaflet touches `window`, so it can only render on the client.
 const MapView = dynamic(
@@ -100,18 +102,23 @@ export default function AtlasPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
+      <PageHeader
+        eyebrow="Spatial WebGIS Engine"
+        title="FRA Atlas"
+        description="Spatial intelligence for FRA claims, verification and monitoring across Madhya Pradesh, Odisha, Telangana, and Tripura."
+        badge={
+          <div className="inline-flex items-center gap-2 rounded-full border border-line bg-paper px-3 py-1 font-mono text-[10px] text-ink-soft">
+            <span>Mode:</span>
+            <span className="font-bold uppercase text-clay">{role}</span>
+          </div>
+        }
+      />
+
       {error && (
         <div className="mb-4 rounded-lg border border-rejected/30 bg-rejected/5 p-4 text-sm text-rejected">
           {error}
         </div>
       )}
-
-      {/* Role switch bar notification */}
-      <div className="mb-4 inline-flex items-center gap-2 rounded-lg border border-line bg-paper px-3 py-1.5 font-mono text-[10px] text-ink-soft">
-        Current Mode: <span className="font-bold uppercase text-clay">{role}</span>
-        {isCommunity && <span className="text-ink-soft italic">(Filtered to claimant: Kunti Kondh)</span>}
-        {role === "verifier" && <span className="text-ink-soft italic">(All pending claims flagged/pulsing on map)</span>}
-      </div>
 
       <div className="grid grid-cols-1 gap-0 overflow-hidden rounded-xl border border-line lg:grid-cols-[280px_1fr_320px]">
         <div className="border-b border-line lg:border-b-0 lg:border-r">

@@ -7,6 +7,8 @@ import { CLAIM_TYPE_LABELS, STATUS_LABELS } from "@/lib/types";
 import { ConvergenceCardModal } from "@/components/dss/convergence-card-modal";
 import { executeClaimAction } from "@/lib/queries";
 import { useRole } from "@/lib/role-store";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Button } from "@/components/ui/button";
 
 const STATUS_BADGE_CLASSES: Record<string, string> = {
   approved: "bg-approved/15 text-approved",
@@ -101,13 +103,7 @@ export function ClaimDetailPanel({ claim, onClose, onUpdateStatus }: ClaimDetail
     <div className="h-full overflow-y-auto p-6">
       <div className="flex items-center justify-between border-b border-line pb-4 mb-4">
         <div className="flex flex-wrap gap-2">
-          <span
-            className={`inline-block rounded-full px-3 py-1 font-mono text-xs uppercase tracking-wider ${
-              STATUS_BADGE_CLASSES[claim.status] || "bg-pending/15 text-pending"
-            }`}
-          >
-            {STATUS_LABELS[claim.status] || claim.status}
-          </span>
+          <StatusBadge status={claim.status} size="md" />
           {claim.has_canopy_violation && (
             <span className="inline-block rounded-full bg-rejected/10 text-rejected border border-rejected/20 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider font-semibold">
               ⚠️ Canopy Anomaly

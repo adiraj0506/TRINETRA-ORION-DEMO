@@ -5,6 +5,8 @@ import { UploadPanel } from "@/components/digitize/upload-panel";
 import { useRole } from "@/lib/role-store";
 import { OcrProgress } from "@/components/digitize/ocr-progress";
 import { ReviewForm } from "@/components/digitize/review-form";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
 import {
   extractFields,
   extractFieldsWithConfidence,
@@ -147,19 +149,16 @@ export default function DigitizePage() {
   }
 
   return (
-    <div className="mx-auto max-w-6xl px-6 py-16">
-      <p className="font-mono text-xs uppercase tracking-wider text-clay">
-        Digitization Pipeline
-      </p>
-      <h1 className="mt-3 font-display text-4xl text-ink md:text-5xl">
-        From scanned form to structured record
-      </h1>
-      <p className="mt-4 max-w-2xl text-ink-soft">
-        OCR reads the document, rule-based extraction pulls out the fields
-        that matter, and a human confirms every value before it counts as
-        digitized — this is the pipeline behind the digitization numbers on
-        the Dashboard.
-      </p>
+    <div className="mx-auto max-w-7xl px-6 py-10">
+      <PageHeader
+        eyebrow="Document Processing Pipeline"
+        title="Claim Digitization"
+        description="From scanned physical claim forms to structured, human-verified digital records — OCR reads the document, rule-based extraction isolates fields, and an officer validates before registering to the database."
+      >
+        <Button href="/admin" variant="secondary" size="sm">
+          Verification Queue
+        </Button>
+      </PageHeader>
 
       {/* Language Selector Card */}
       <div className="mt-8 rounded-xl border border-line bg-paper-raised p-6">

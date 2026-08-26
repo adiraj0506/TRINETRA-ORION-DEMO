@@ -7,6 +7,8 @@ import { evaluateSchemes, type SchemeRow } from "@/lib/dss";
 import type { FullClaimDetails } from "@/lib/services/claim-service";
 import { CLAIM_TYPE_LABELS, STATUS_LABELS } from "@/lib/types";
 import { ConvergenceCardModal } from "@/components/dss/convergence-card-modal";
+import { StatusBadge } from "@/components/ui/status-badge";
+import { Button } from "@/components/ui/button";
 
 export default function ClaimDetailPage({
   params,
@@ -124,30 +126,30 @@ export default function ClaimDetailPage({
 
         <div className="flex items-center gap-3">
           {claim.status !== "approved" && (
-            <button
+            <Button
               onClick={() => handleQuickAction("approve")}
-              type="button"
-              className="rounded-full bg-approved text-paper-raised px-4 py-1.5 font-mono text-xs uppercase tracking-wider font-bold transition-all hover:bg-approved-deep cursor-pointer"
+              variant="primary"
+              size="sm"
             >
               ✓ Approve Title
-            </button>
+            </Button>
           )}
           {claim.status !== "rejected" && (
-            <button
+            <Button
               onClick={() => handleQuickAction("reject")}
-              type="button"
-              className="rounded-full bg-rejected/10 text-rejected border border-rejected/30 px-4 py-1.5 font-mono text-xs uppercase tracking-wider font-bold hover:bg-rejected/20 cursor-pointer"
+              variant="danger"
+              size="sm"
             >
               ✗ Reject
-            </button>
+            </Button>
           )}
-          <button
+          <Button
             onClick={() => setShowWelfareModal(true)}
-            type="button"
-            className="rounded-full border border-forest/30 bg-forest/5 text-forest px-4 py-1.5 font-mono text-xs uppercase tracking-wider font-bold hover:bg-forest/10 cursor-pointer"
+            variant="secondary"
+            size="sm"
           >
             📄 Welfare Card
-          </button>
+          </Button>
         </div>
       </div>
 
@@ -165,17 +167,7 @@ export default function ClaimDetailPage({
               <h1 className="font-display text-3xl font-bold text-ink">
                 {claimant.full_name}
               </h1>
-              <span
-                className={`rounded-full px-3 py-1 font-mono text-xs uppercase tracking-wider font-bold ${
-                  claim.status === "approved"
-                    ? "bg-approved/15 text-approved"
-                    : claim.status === "rejected"
-                    ? "bg-rejected/15 text-rejected"
-                    : "bg-pending/15 text-pending"
-                }`}
-              >
-                {STATUS_LABELS[claim.status] || claim.status}
-              </span>
+              <StatusBadge status={claim.status} size="md" />
             </div>
             <p className="text-sm text-ink-soft mt-1">
               {claimant.village}, {claimant.district} · {claim.state_code} · Application Number:{" "}

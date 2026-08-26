@@ -7,6 +7,8 @@ import type { ClaimMapRow } from "@/lib/types";
 import { ClaimantPicker } from "@/components/dss/claimant-picker";
 import { DssResults } from "@/components/dss/dss-results";
 import { useRole } from "@/lib/role-store";
+import { PageHeader } from "@/components/ui/page-header";
+import { Button } from "@/components/ui/button";
 
 export default function DssPage() {
   const { isCommunity } = useRole();
@@ -60,18 +62,15 @@ export default function DssPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
-      <div className="mb-6">
-        <p className="font-mono text-xs uppercase tracking-wider text-clay">
-          Decision Support
-        </p>
-        <h1 className="font-display text-3xl text-ink">
-          Decision Support System
-        </h1>
-        <p className="mt-2 max-w-2xl text-ink-soft">
-          A deterministic rule engine — no ML, fully explainable — matches
-          every titleholder to the government schemes they qualify for.
-        </p>
-      </div>
+      <PageHeader
+        eyebrow="Scheme Convergence Engine"
+        title="Decision Support System"
+        description="A deterministic rule engine — no ML, fully explainable — matches every titleholder to the government schemes they qualify for."
+      >
+        <Button href="/schemes" variant="secondary" size="sm">
+          View Scheme Guidelines →
+        </Button>
+      </PageHeader>
 
       {error && (
         <div className="mb-4 rounded-lg border border-rejected/30 bg-rejected/5 p-4 text-sm text-rejected">
