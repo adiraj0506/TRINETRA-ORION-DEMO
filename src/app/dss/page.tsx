@@ -65,7 +65,7 @@ export default function DssPage() {
       <PageHeader
         eyebrow="Scheme Convergence Engine"
         title="Decision Support System"
-        description="A deterministic rule engine — no ML, fully explainable — matches every titleholder to the government schemes they qualify for."
+        description="A deterministic rule engine — fully explainable — matches every titleholder to the government schemes they qualify for."
       >
         <Button href="/schemes" variant="secondary" size="sm">
           View Scheme Guidelines →
