@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { Button } from "@/components/ui/button";
 
 export interface AttachedDoc {
   id: string;
@@ -119,14 +120,15 @@ export function UploadPanel({
           />
         </div>
 
-        <button
+        <Button
           onClick={onUseSample}
           disabled={disabled}
-          type="button"
-          className="mt-3 w-full rounded-full bg-clay px-4 py-2 font-mono text-xs uppercase tracking-wider text-paper-raised transition-colors hover:bg-clay-deep disabled:opacity-50 font-bold cursor-pointer"
+          variant="clay"
+          size="sm"
+          className="mt-3 w-full"
         >
           Use sample claim form
-        </button>
+        </Button>
 
         {previewUrl && (
           <div className="mt-4 overflow-hidden rounded-lg border border-line">
@@ -268,23 +270,25 @@ export function UploadPanel({
             </div>
 
             <div className="flex items-center justify-end gap-2.5 pt-2">
-              <button
+              <Button
                 type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => {
                   setTempFile(null);
                   setShowSuppModal(false);
                 }}
-                className="rounded-full border border-line px-4 py-1.5 font-mono text-xs uppercase tracking-wider text-ink-soft hover:text-ink cursor-pointer"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
+                variant="primary"
+                size="sm"
                 onClick={handleConfirmSupplementaryDoc}
-                className="rounded-full bg-forest text-paper-raised px-4 py-1.5 font-mono text-xs uppercase tracking-wider font-bold transition-all hover:bg-forest-deep cursor-pointer"
               >
                 Attach Document
-              </button>
+              </Button>
             </div>
           </div>
         </div>
