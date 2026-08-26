@@ -7,14 +7,17 @@ import { submitClaimToDatabase } from "@/lib/queries";
 import { useOffline } from "@/lib/offline-store";
 
 const FIELD_LABELS: Record<keyof ExtractedFields, string> = {
-  fullName: "Full name",
-  village: "Village",
-  district: "District",
-  state: "State (MP / OD / TS / TR)",
-  category: "Category (ST / OTFD)",
-  claimType: "Claim type (IFR / CR / CFR)",
-  areaClaimedHectares: "Area claimed (ha)",
-  householdSize: "Household size",
+  fullName: "1. Name(s) of Holder(s) of Forest rights",
+  guardianName: "2. Name of Father/Mother",
+  dependents: "3. Name of Dependents",
+  address: "4. Address",
+  village: "5. Village/Gram Sabha",
+  gramPanchayat: "6. Gram Panchayat",
+  block: "7. Tehsil/Taluka",
+  district: "8. District",
+  category: "9. Whether Scheduled Tribe or OTFD",
+  areaClaimedHectares: "10. Area",
+  plotNumber: "11. Khasra/compartment No.",
 };
 
 interface ReviewFormProps {
@@ -52,7 +55,7 @@ export function ReviewForm({
   const handleConfirmAndSubmit = async () => {
     setError(null);
 
-    // If offline mode, save locally in IndexedDB/localStorage
+    // If offline mode, save locally
     if (isOffline) {
       addClaim(fields);
       setSubmittedResult({
@@ -64,13 +67,12 @@ export function ReviewForm({
 
     setSubmitting(true);
     try {
-      // Clean and normalize state code
-      let stateCode = (fields.state || "OD").toUpperCase().trim();
-      if (stateCode.includes("ODISHA") || stateCode.includes("ORISSA")) stateCode = "OD";
-      else if (stateCode.includes("MADHYA") || stateCode.includes("PRADESH")) stateCode = "MP";
-      else if (stateCode.includes("TELANGANA")) stateCode = "TS";
-      else if (stateCode.includes("TRIPURA")) stateCode = "TR";
-      if (!["OD", "MP", "TS", "TR"].includes(stateCode)) stateCode = "OD";
+      // Clean and normalize state code from address or district, defaulting to "OD"
+      let stateCode = "OD";
+      const fullSearch = `${fields.address} ${fields.district} ${fields.village}`.toUpperCase();
+      if (fullSearch.includes("MP") || fullSearch.includes("MADHYA")) stateCode = "MP";
+      else if (fullSearch.includes("TS") || fullSearch.includes("TELANGANA")) stateCode = "TS";
+      else if (fullSearch.includes("TR") || fullSearch.includes("TRIPURA")) stateCode = "TR";
 
       const extractedFieldsMap: Record<string, { value: string; confidence: number }> = {};
       (Object.keys(fields) as (keyof ExtractedFields)[]).forEach((k) => {
@@ -84,17 +86,35 @@ export function ReviewForm({
         Object.values(confidences).reduce((a, b) => a + b, 0) /
         (Object.keys(confidences).length || 1);
 
+      // Parse Area Bighas if specified, otherwise fallback to parsing float
+      let areaVal = 1.45;
+      const rawArea = fields.areaClaimedHectares || "";
+      if (rawArea.toLowerCase().includes("bigha")) {
+        // e.g., "00-02-00 Bighas" -> extract number of bighas and convert (1 Bigha ≈ 0.25 Hectares or 0.08 Hectares depending on state, let's convert 1 bigha = 0.08Hectares)
+        const match = rawArea.match(/(\d+)[-\s]+(\d+)[-\s]+(\d+)/) || rawArea.match(/(\d+(\.\d+)?)/);
+        if (match) {
+          const valNum = parseFloat(match[1]);
+          areaVal = valNum * 0.08; // conversion
+        }
+      } else {
+        areaVal = parseFloat(rawArea) || 1.45;
+      }
+
       const payload = {
         fullName: fields.fullName || "Claimant Candidate",
+        guardianName: fields.guardianName || null,
+        dependents: fields.dependents || null,
+        address: fields.address || null,
         village: fields.village || "Village Center",
+        gramPanchayat: fields.gramPanchayat || null,
+        block: fields.block || null,
         district: fields.district || "District Center",
         stateCode,
-        category: fields.category?.toUpperCase() === "OTFD" ? "OTFD" : "ST",
-        claimType: (["IFR", "CR", "CFR"].includes(fields.claimType?.toUpperCase())
-          ? fields.claimType.toUpperCase()
-          : "IFR") as any,
-        areaClaimedHectares: parseFloat(fields.areaClaimedHectares) || 1.45,
-        householdSize: parseInt(fields.householdSize, 10) || 4,
+        category: fields.category?.toUpperCase().includes("OTFD") || fields.category?.toUpperCase().includes("OTHER") ? "OTFD" : "ST",
+        claimType: "IFR", // Defaulting to Individual Forest Rights
+        areaClaimedHectares: areaVal,
+        householdSize: fields.dependents ? fields.dependents.split(/[,;]+/).length + 1 : 4,
+        plotNumber: fields.plotNumber || null,
         rawOcrText: rawText,
         ocrConfidence: Math.round(avgConfidence),
         extractedFields: extractedFieldsMap,
@@ -142,7 +162,7 @@ export function ReviewForm({
 
       <p className="mt-4 text-sm text-ink-soft leading-relaxed">
         Verify auto-extracted values against the scanned document. Edited values are marked as{" "}
-        <span className="text-water font-semibold">Human Verified</span>. On submission, a formal record will be created in Supabase with PostGIS coordinates, audit trail, and verification queue assignment.
+        <span className="text-water font-semibold">Human Verified</span>.
       </p>
 
       {error && (
@@ -298,7 +318,7 @@ export function ReviewForm({
                 ? "Persisting to Supabase..."
                 : isOffline
                 ? "Confirm & Save Offline"
-                : "Confirm & Submit Claim to Database"}
+                : "Confirm & Submit Claim For Verification"}
             </button>
 
             <span className="text-[11px] text-ink-soft italic">

@@ -31,6 +31,9 @@ export interface CreateClaimPayload {
   householdSize: number;
   surveyNumber?: string;
   plotNumber?: string;
+  dependents?: string;
+  address?: string;
+  preferredLanguage?: string;
   documentName?: string;
   documentDataUrl?: string;
   rawOcrText?: string;
@@ -93,8 +96,8 @@ export async function createClaimFromDigitization(payload: CreateClaimPayload): 
   // 1. Insert Claimant
   const claimantSql = `
     insert into claimants (
-      full_name, guardian_name, gender, village, gram_panchayat, block, district, state_code, category, household_size
-    ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      full_name, guardian_name, gender, village, gram_panchayat, block, district, state_code, category, household_size, dependents, address, preferred_language
+    ) values ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
     returning id;
   `;
   const claimantRes = await queryDb<{ id: string }>(claimantSql, [
@@ -108,6 +111,9 @@ export async function createClaimFromDigitization(payload: CreateClaimPayload): 
     stateCode,
     payload.category || "ST",
     payload.householdSize || 1,
+    payload.dependents || null,
+    payload.address || null,
+    payload.preferredLanguage || "eng",
   ]);
   const claimantId = claimantRes[0].id;
 

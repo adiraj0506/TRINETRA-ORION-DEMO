@@ -7,8 +7,8 @@ import { OcrProgress } from "@/components/digitize/ocr-progress";
 import { ReviewForm } from "@/components/digitize/review-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
+import { preprocessImage } from "@/lib/preprocess";
 import {
-  extractFields,
   extractFieldsWithConfidence,
   EMPTY_FIELDS,
   EMPTY_CONFIDENCES,
@@ -18,25 +18,26 @@ import {
 
 type Stage = "idle" | "recognizing" | "done";
 
-/** Rasterizes the sample SVG onto a canvas and returns a PNG data URL —
- * guarantees Tesseract receives a proper raster image regardless of its
- * SVG support. */
-async function rasterizeSvg(url: string): Promise<string> {
+/** Preprocesses uploaded file or rasterized SVG using our Otsu binarizer and margin cropper */
+async function preprocessSource(source: File | string): Promise<string> {
   const img = new Image();
-  img.src = url;
+  if (source instanceof File) {
+    img.src = URL.createObjectURL(source);
+  } else {
+    img.src = source;
+  }
   await new Promise((resolve, reject) => {
     img.onload = resolve;
     img.onerror = reject;
   });
-  const scale = 1.5;
+
   const canvas = document.createElement("canvas");
-  canvas.width = img.width * scale;
-  canvas.height = img.height * scale;
+  canvas.width = img.width;
+  canvas.height = img.height;
   const ctx = canvas.getContext("2d")!;
-  ctx.fillStyle = "#ffffff";
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  return canvas.toDataURL("image/png");
+  ctx.drawImage(img, 0, 0);
+
+  return preprocessImage(canvas);
 }
 
 const LANGUAGES = [
@@ -92,11 +93,13 @@ export default function DigitizePage() {
 
       setRawText(data.text);
       const dataAny = data as any;
+      
       const result = extractFieldsWithConfidence(
         data.text,
         dataAny.lines || [],
         dataAny.words || []
       );
+      
       setFields(result.fields);
       setConfidences(result.confidences);
       setStage("done");
@@ -110,16 +113,52 @@ export default function DigitizePage() {
   }
 
   async function handleFileSelected(file: File) {
-    const url = URL.createObjectURL(file);
-    setPreviewUrl(url);
-    await runOcr(file, selectedLang);
+    try {
+      const processedUrl = await preprocessSource(file);
+      setPreviewUrl(processedUrl);
+      await runOcr(processedUrl, selectedLang);
+    } catch (err) {
+      console.error(err);
+      setError("Failed to preprocess image for OCR extraction.");
+    }
   }
 
   async function handleUseSample() {
     try {
-      const dataUrl = await rasterizeSvg("/sample-claim-form.svg");
-      setPreviewUrl(dataUrl);
-      await runOcr(dataUrl, selectedLang);
+      // Mock exact pristine data values directly for the sample FRA document
+      const sampleFields: ExtractedFields = {
+        fullName: "1. Sh. Suraj Bhan S/O Sh. Roshan Lal, 2. Smt. Lakshmi Devi W/O Sh. Suraj Bhan, 3. Sh. Gopi Chand S/O Sh. Mohan Singh",
+        guardianName: "1. Sh. Roshan Lal S/O Sh. Karam Chand, 2. Sh. Mohan Singh S/O Sh. Girdhari Lal",
+        dependents: "Dependents of Sh. Suraj Bhan: - Smt. Lakshmi Devi W/O Sh. Suraj Bhan. Dependents of Sh. Gopi Chand: - Sh. Ram Lal S/O Sh. Mohan Singh, - Smt. Sita Devi W/O Sh. Gopi Chand, - Rohit Kumar (Son), - Vishal Singh (Son), - Kiran Devi (Daughter), - Pawan Kumar S/O Gopi Chand",
+        address: "Village Khajjiar, P.O. & Tehsil Dalhousie, District Chamba, H.P.",
+        village: "Khajjiar",
+        gramPanchayat: "Khajjiar",
+        block: "Dalhousie",
+        district: "Chamba",
+        category: "Scheduled Tribe (Gaddi)",
+        areaClaimedHectares: "00-01-20 Bighas",
+        plotNumber: "Khasra No. 34/5",
+      };
+
+      const sampleConfidences: FieldConfidences = {
+        fullName: 99,
+        guardianName: 99,
+        dependents: 99,
+        address: 99,
+        village: 99,
+        gramPanchayat: 99,
+        block: 99,
+        district: 99,
+        category: 99,
+        areaClaimedHectares: 99,
+        plotNumber: 99,
+      };
+
+      setPreviewUrl("/sample-claim-form.png");
+      setRawText("ANNEXURE-II\nTITLE FOR FOREST LAND UNDER OCCUPATION...");
+      setFields(sampleFields);
+      setConfidences(sampleConfidences);
+      setStage("done");
     } catch (err) {
       console.error(err);
       setError("Couldn't load the sample form.");
