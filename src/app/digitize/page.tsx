@@ -128,9 +128,9 @@ export default function DigitizePage() {
       const processedUrl = await preprocessSource(file);
       setPreviewUrl(processedUrl);
       await runOcr(processedUrl, selectedLang);
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Failed to preprocess image for OCR extraction.");
+      setError(`Failed to preprocess image for OCR extraction: ${err.message || err.toString()}`);
     }
   }
 
@@ -170,9 +170,9 @@ export default function DigitizePage() {
       setFields(sampleFields);
       setConfidences(sampleConfidences);
       setStage("done");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
-      setError("Couldn't load the sample form.");
+      setError(`Couldn't load the sample form: ${err.message || err.toString()}`);
     }
   }
 
