@@ -1,11 +1,14 @@
-import { supabase } from "@/lib/supabase";
+import { supabase, isSupabaseConfigured } from "@/lib/supabase";
 import type { ClaimMapRow } from "@/lib/types";
-import type { SchemeRow } from "@/lib/dss";
+import { STATIC_SCHEMES, SchemeRow } from "@/lib/dss";
 import type { FullClaimDetails } from "@/lib/services/claim-service";
 
 /**
  * Fetches all claims with joined claimant/state info and parcel centroids.
- * First tries internal Next.js API / database query, falling back to Supabase client.
+ * Priority:
+ *  1. Internal Next.js API Route (/api/claims) connected to PostgreSQL pool.
+ *  2. Client-side Supabase query (if credentials configured).
+ *  3. Empty array / graceful fallback with diagnostic logging.
  */
 export async function fetchClaimsForMap(): Promise<ClaimMapRow[]> {
   try {
@@ -16,18 +19,27 @@ export async function fetchClaimsForMap(): Promise<ClaimMapRow[]> {
         return data as ClaimMapRow[];
       }
     }
-  } catch (err) {
-    console.warn("API /api/claims fetch failed, attempting client Supabase fetch:", err);
+  } catch (err: any) {
+    console.warn("[TRINETRA] /api/claims fetch failed:", err.message);
   }
 
-  // Fallback to client Supabase instance
-  const { data, error } = await supabase
-    .from("claims_map")
-    .select("*")
-    .order("submitted_on", { ascending: false });
+  // Fallback to client Supabase instance if validly configured
+  if (isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase
+        .from("claims_map")
+        .select("*")
+        .order("submitted_on", { ascending: false });
 
-  if (error) throw error;
-  return (data ?? []) as ClaimMapRow[];
+      if (!error && data && data.length > 0) {
+        return data as ClaimMapRow[];
+      }
+    } catch (err: any) {
+      console.warn("[TRINETRA] Client Supabase fetchClaimsForMap error:", err.message);
+    }
+  }
+
+  return [];
 }
 
 /** Fetches full unified details for a single claim across all tabs. */
@@ -78,60 +90,57 @@ export async function submitClaimToDatabase(payload: any): Promise<{ success: bo
 /** Fetches government scheme reference data used by the DSS. */
 export async function fetchSchemes(): Promise<SchemeRow[]> {
   try {
-    const { data, error } = await supabase
-      .from("schemes")
-      .select("code, name, description, eligibility_json, department, benefit_description");
-
-    if (error) throw error;
-    if (data && data.length > 0) {
-      return data as SchemeRow[];
+    const res = await fetch("/api/schemes", { cache: "no-store" });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data && Array.isArray(json.data) && json.data.length > 0) {
+        return json.data as SchemeRow[];
+      }
     }
-  } catch (err) {
-    console.warn("fetchSchemes failed, using default schemes:", err);
+  } catch (err: any) {
+    console.warn("[TRINETRA] /api/schemes fetch failed:", err.message);
   }
 
-  return [
-    {
-      code: "PM_KISAN",
-      name: "PM-KISAN",
-      description: "Income support of Rs 6,000/year for landholding farmer families.",
-      eligibility_json: { min_land_hectares: 0.01, requires_title: true },
-    },
-    {
-      code: "MGNREGA",
-      name: "MGNREGA",
-      description: "Guaranteed 100 days of wage employment per year to rural households.",
-      eligibility_json: { requires_title: false, category: ["ST", "OTFD"] },
-    },
-    {
-      code: "JJM",
-      name: "Jal Jeevan Mission",
-      description: "Functional household tap water connection for every rural household.",
-      eligibility_json: { requires_title: false },
-    },
-    {
-      code: "DAJGUA",
-      name: "Dharti Aaba Janjatiya Gram Utkarsh Abhiyan",
-      description: "Saturation of infrastructure and livelihood schemes in tribal-majority villages.",
-      eligibility_json: { requires_title: true, category: ["ST"] },
-    },
-    {
-      code: "PM_JANMAN",
-      name: "PM-JANMAN",
-      description: "Housing, clean water, sanitation, and livelihood support for Particularly Vulnerable Tribal Groups (PVTGs).",
-      eligibility_json: { requires_title: false, category: ["ST"] },
-    },
-  ] as SchemeRow[];
+  if (isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase
+        .from("schemes")
+        .select("code, name, description, eligibility_json, department, benefit_description");
+
+      if (!error && data && data.length > 0) {
+        return data as SchemeRow[];
+      }
+    } catch (err: any) {
+      console.warn("[TRINETRA] Client Supabase fetchSchemes error:", err.message);
+    }
+  }
+
+  return STATIC_SCHEMES;
 }
 
 /** Fetches spatial dispute zones (canopy loss and restricted boundaries) from PostGIS. */
 export async function fetchDisputeZones(): Promise<any[]> {
   try {
-    const { data, error } = await supabase.from("dispute_zones_map").select("*");
-    if (error) throw error;
-    if (data && data.length > 0) return data;
-  } catch (error: any) {
-    console.warn("fetchDisputeZones from Supabase failed, using static fallback:", error.message);
+    const res = await fetch("/api/dispute-zones", { cache: "no-store" });
+    if (res.ok) {
+      const json = await res.json();
+      if (json.data && Array.isArray(json.data)) {
+        return json.data;
+      }
+    }
+  } catch (err: any) {
+    console.warn("[TRINETRA] /api/dispute-zones fetch failed:", err.message);
   }
+
+  if (isSupabaseConfigured()) {
+    try {
+      const { data, error } = await supabase.from("dispute_zones_map").select("*");
+      if (!error && data && data.length > 0) return data;
+    } catch (err: any) {
+      console.warn("[TRINETRA] Client Supabase fetchDisputeZones error:", err.message);
+    }
+  }
+
   return [];
 }
+

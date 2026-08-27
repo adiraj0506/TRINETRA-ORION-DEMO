@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, ShieldCheck } from "lucide-react";
@@ -9,8 +9,21 @@ import { MAIN_NAV_ITEMS } from "@/lib/navigation";
 
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isLiveDb, setIsLiveDb] = useState<boolean | null>(null);
   const pathname = usePathname();
   const { role, setRole } = useRole();
+
+  useEffect(() => {
+    // Check health once on mount
+    fetch("/api/health")
+      .then((res) => res.json())
+      .then((data) => {
+        setIsLiveDb(data?.database?.status === "connected");
+      })
+      .catch(() => {
+        setIsLiveDb(false);
+      });
+  }, []);
 
   const isNavActive = (href: string) => {
     if (href === "/") return pathname === "/";
@@ -90,14 +103,24 @@ export function SiteHeader() {
             </div>
           </div>
 
-          {/* Connection Status Indicator (Canonical, Non-disruptive) */}
-          <div
-            className="hidden sm:flex items-center gap-1.5 rounded-full border border-approved/20 bg-approved/5 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-approved"
-            title="System connected to Supabase and PostGIS database"
-          >
-            <span className="h-2 w-2 rounded-full bg-approved animate-pulse" />
-            <span>LIVE</span>
-          </div>
+          {/* Connection Status Indicator (Dynamic & Transparent) */}
+          {isLiveDb === true ? (
+            <div
+              className="hidden sm:flex items-center gap-1.5 rounded-full border border-approved/30 bg-approved/10 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-approved shadow-2xs"
+              title="Connected to Supabase PostgreSQL & PostGIS"
+            >
+              <span className="h-2 w-2 rounded-full bg-approved animate-pulse" />
+              <span>LIVE DB</span>
+            </div>
+          ) : isLiveDb === false ? (
+            <div
+              className="hidden sm:flex items-center gap-1.5 rounded-full border border-clay/30 bg-clay/10 px-2.5 py-1 font-mono text-[10px] font-bold uppercase tracking-wider text-clay shadow-2xs"
+              title="Using local demo fallback dataset — Supabase disconnected"
+            >
+              <span className="h-2 w-2 rounded-full bg-clay" />
+              <span>DEMO DATA</span>
+            </div>
+          ) : null}
 
           {/* Mobile Menu Toggle Button */}
           <button
