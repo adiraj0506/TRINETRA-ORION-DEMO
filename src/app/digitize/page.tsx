@@ -83,6 +83,9 @@ export default function DigitizePage() {
       const ocrLang = langConfig?.supported ? langConfig.code : "eng";
 
       const worker = await createWorker(ocrLang, 1, {
+        workerPath: "/tesseract/worker.min.js",
+        corePath: "/tesseract",
+        langPath: "/tesseract/lang-data",
         logger: (m) => {
           if (m.status) setOcrStatus(m.status);
           if (typeof m.progress === "number") setProgress(m.progress);
