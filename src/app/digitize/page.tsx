@@ -83,9 +83,10 @@ export default function DigitizePage() {
       const ocrLang = langConfig?.supported ? langConfig.code : "eng";
 
       const worker = await createWorker(ocrLang, 1, {
-        workerPath: "/tesseract/worker.min.js",
-        corePath: "/tesseract",
-        langPath: "/tesseract/lang-data",
+        workerPath: typeof window !== "undefined" ? `${window.location.origin}/tesseract/worker.min.js` : undefined,
+        corePath: typeof window !== "undefined" ? `${window.location.origin}/tesseract` : undefined,
+        langPath: typeof window !== "undefined" ? `${window.location.origin}/tesseract/lang-data` : undefined,
+        workerBlobURL: false,
         logger: (m) => {
           if (m.status) setOcrStatus(m.status);
           if (typeof m.progress === "number") setProgress(m.progress);
