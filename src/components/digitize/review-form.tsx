@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { ExtractedFields, FieldConfidences } from "@/lib/ner";
 import { submitClaimToDatabase } from "@/lib/queries";
 import { useOffline } from "@/lib/offline-store";
+import { saveClaimOffline } from "@/lib/offline-db";
 
 const FIELD_LABELS: Record<keyof ExtractedFields, string> = {
   fullName: "1. Name(s) of Holder(s) of Forest rights",
@@ -55,79 +56,86 @@ export function ReviewForm({
   const handleConfirmAndSubmit = async () => {
     setError(null);
 
-    // If offline mode, save locally
-    if (isOffline) {
-      addClaim(fields);
-      setSubmittedResult({
-        claimId: "offline-cached",
-        claimantId: "offline-claimant",
-      });
+    // Clean and normalize state code from address or district, defaulting to "OD"
+    let stateCode = "OD";
+    const fullSearch = `${fields.address} ${fields.district} ${fields.village}`.toUpperCase();
+    if (fullSearch.includes("MP") || fullSearch.includes("MADHYA")) stateCode = "MP";
+    else if (fullSearch.includes("TS") || fullSearch.includes("TELANGANA")) stateCode = "TS";
+    else if (fullSearch.includes("TR") || fullSearch.includes("TRIPURA")) stateCode = "TR";
+
+    const extractedFieldsMap: Record<string, { value: string; confidence: number }> = {};
+    (Object.keys(fields) as (keyof ExtractedFields)[]).forEach((k) => {
+      extractedFieldsMap[k] = {
+        value: fields[k],
+        confidence: confidences[k] || 85,
+      };
+    });
+
+    const avgConfidence =
+      Object.values(confidences).reduce((a, b) => a + b, 0) /
+      (Object.keys(confidences).length || 1);
+
+    // Parse Area Bighas if specified, otherwise fallback to parsing float
+    let areaVal = 1.45;
+    const rawArea = fields.areaClaimedHectares || "";
+    if (rawArea.toLowerCase().includes("bigha")) {
+      const match = rawArea.match(/(\d+)[-\s]+(\d+)[-\s]+(\d+)/) || rawArea.match(/(\d+(\.\d+)?)/);
+      if (match) {
+        const valNum = parseFloat(match[1]);
+        areaVal = valNum * 0.08; // conversion
+      }
+    } else {
+      areaVal = parseFloat(rawArea) || 1.45;
+    }
+
+    const payload = {
+      fullName: fields.fullName || "Claimant Candidate",
+      guardianName: fields.guardianName || null,
+      dependents: fields.dependents || null,
+      address: fields.address || null,
+      village: fields.village || "Village Center",
+      gramPanchayat: fields.gramPanchayat || null,
+      block: fields.block || null,
+      district: fields.district || "District Center",
+      stateCode,
+      category: fields.category?.toUpperCase().includes("OTFD") || fields.category?.toUpperCase().includes("OTHER") ? "OTFD" : "ST",
+      claimType: "IFR", // Defaulting to Individual Forest Rights
+      areaClaimedHectares: areaVal,
+      householdSize: fields.dependents ? fields.dependents.split(/[,;]+/).length + 1 : 4,
+      plotNumber: fields.plotNumber || null,
+      rawOcrText: rawText,
+      ocrConfidence: Math.round(avgConfidence),
+      extractedFields: extractedFieldsMap,
+      documentName: "scanned_claim_form.png",
+      supplementaryDocuments: supplementaryDocs.map((d) => ({
+        documentType: d.documentType,
+        documentName: d.documentName,
+        documentRefNumber: d.documentRefNumber,
+        mimeType: d.mimeType,
+        fileSize: d.fileSize,
+      })),
+    };
+
+    // If offline mode toggle or physically offline, save locally to IndexedDB queue
+    if (isOffline || (typeof navigator !== "undefined" && !navigator.onLine)) {
+      setSubmitting(true);
+      try {
+        await saveClaimOffline(payload);
+        setSubmittedResult({
+          claimId: "offline-queued",
+          claimantId: "offline-pending",
+        });
+      } catch (err: any) {
+        console.error(err);
+        setError("Failed to queue claim offline: " + (err.message || err.toString()));
+      } finally {
+        setSubmitting(false);
+      }
       return;
     }
 
     setSubmitting(true);
     try {
-      // Clean and normalize state code from address or district, defaulting to "OD"
-      let stateCode = "OD";
-      const fullSearch = `${fields.address} ${fields.district} ${fields.village}`.toUpperCase();
-      if (fullSearch.includes("MP") || fullSearch.includes("MADHYA")) stateCode = "MP";
-      else if (fullSearch.includes("TS") || fullSearch.includes("TELANGANA")) stateCode = "TS";
-      else if (fullSearch.includes("TR") || fullSearch.includes("TRIPURA")) stateCode = "TR";
-
-      const extractedFieldsMap: Record<string, { value: string; confidence: number }> = {};
-      (Object.keys(fields) as (keyof ExtractedFields)[]).forEach((k) => {
-        extractedFieldsMap[k] = {
-          value: fields[k],
-          confidence: confidences[k] || 85,
-        };
-      });
-
-      const avgConfidence =
-        Object.values(confidences).reduce((a, b) => a + b, 0) /
-        (Object.keys(confidences).length || 1);
-
-      // Parse Area Bighas if specified, otherwise fallback to parsing float
-      let areaVal = 1.45;
-      const rawArea = fields.areaClaimedHectares || "";
-      if (rawArea.toLowerCase().includes("bigha")) {
-        // e.g., "00-02-00 Bighas" -> extract number of bighas and convert (1 Bigha ≈ 0.25 Hectares or 0.08 Hectares depending on state, let's convert 1 bigha = 0.08Hectares)
-        const match = rawArea.match(/(\d+)[-\s]+(\d+)[-\s]+(\d+)/) || rawArea.match(/(\d+(\.\d+)?)/);
-        if (match) {
-          const valNum = parseFloat(match[1]);
-          areaVal = valNum * 0.08; // conversion
-        }
-      } else {
-        areaVal = parseFloat(rawArea) || 1.45;
-      }
-
-      const payload = {
-        fullName: fields.fullName || "Claimant Candidate",
-        guardianName: fields.guardianName || null,
-        dependents: fields.dependents || null,
-        address: fields.address || null,
-        village: fields.village || "Village Center",
-        gramPanchayat: fields.gramPanchayat || null,
-        block: fields.block || null,
-        district: fields.district || "District Center",
-        stateCode,
-        category: fields.category?.toUpperCase().includes("OTFD") || fields.category?.toUpperCase().includes("OTHER") ? "OTFD" : "ST",
-        claimType: "IFR", // Defaulting to Individual Forest Rights
-        areaClaimedHectares: areaVal,
-        householdSize: fields.dependents ? fields.dependents.split(/[,;]+/).length + 1 : 4,
-        plotNumber: fields.plotNumber || null,
-        rawOcrText: rawText,
-        ocrConfidence: Math.round(avgConfidence),
-        extractedFields: extractedFieldsMap,
-        documentName: "scanned_claim_form.png",
-        supplementaryDocuments: supplementaryDocs.map((d) => ({
-          documentType: d.documentType,
-          documentName: d.documentName,
-          documentRefNumber: d.documentRefNumber,
-          mimeType: d.mimeType,
-          fileSize: d.fileSize,
-        })),
-      };
-
       const res = await submitClaimToDatabase(payload);
       setSubmittedResult({
         claimId: res.claimId,
@@ -135,7 +143,16 @@ export function ReviewForm({
       });
     } catch (err: any) {
       console.error(err);
-      setError(err.message || "Failed to submit claim to database");
+      console.log("[TRINETRA] Network submission failed, falling back to local IndexedDB queue...");
+      try {
+        await saveClaimOffline(payload);
+        setSubmittedResult({
+          claimId: "offline-queued",
+          claimantId: "offline-pending",
+        });
+      } catch (saveErr: any) {
+        setError(`Submission failed: ${err.message || err.toString()}. (Local queue save also failed: ${saveErr.message})`);
+      }
     } finally {
       setSubmitting(false);
     }
@@ -274,35 +291,54 @@ export function ReviewForm({
       <div className="mt-6 border-t border-line pt-5">
         {submittedResult ? (
           <div className="space-y-4">
-            <div className="rounded-xl bg-approved/10 border border-approved/30 p-5 text-approved">
-              <div className="flex items-center gap-2 font-display text-base font-semibold">
-                <span>✓</span> Claim Registered Successfully
+            {submittedResult.claimId === "offline-queued" ? (
+              <div className="rounded-xl bg-clay/10 border border-clay/30 p-5 text-clay">
+                <div className="flex items-center gap-2 font-display text-base font-semibold">
+                  <span>💾</span> Claim Saved Offline Successfully
+                </div>
+                <p className="mt-1 text-xs text-ink-soft">
+                  You are currently offline. The digitized claim has been securely stored locally in **IndexedDB**. It will automatically upload to the central database once internet connection is restored.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2.5">
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="rounded-full bg-clay text-paper-raised px-4 py-2 font-mono text-[10px] uppercase tracking-wider font-bold transition-all hover:bg-clay-deep"
+                  >
+                    Digitize Another Form
+                  </button>
+                </div>
               </div>
-              <p className="mt-1 text-xs text-ink-soft">
-                Claim has been registered with ID{" "}
-                <span className="font-mono font-bold text-ink">{submittedResult.claimId}</span>. It is now active in the Admin Verification Queue and FRA Atlas.
-              </p>
-              <div className="mt-4 flex flex-wrap gap-2.5">
-                <Link
-                  href={`/claims/${submittedResult.claimId}`}
-                  className="rounded-full bg-forest text-paper-raised px-4 py-2 font-mono text-[10px] uppercase tracking-wider font-bold transition-all hover:bg-forest-deep"
-                >
-                  View Claim Dossier →
-                </Link>
-                <Link
-                  href="/admin"
-                  className="rounded-full border border-forest/30 bg-paper px-4 py-2 font-mono text-[10px] uppercase tracking-wider text-forest font-bold hover:bg-forest/5"
-                >
-                  Open Admin Queue
-                </Link>
-                <Link
-                  href="/atlas"
-                  className="rounded-full border border-line bg-paper px-4 py-2 font-mono text-[10px] uppercase tracking-wider text-ink font-bold hover:border-forest"
-                >
-                  View in Atlas
-                </Link>
+            ) : (
+              <div className="rounded-xl bg-approved/10 border border-approved/30 p-5 text-approved">
+                <div className="flex items-center gap-2 font-display text-base font-semibold">
+                  <span>✓</span> Claim Registered Successfully
+                </div>
+                <p className="mt-1 text-xs text-ink-soft">
+                  Claim has been registered with ID{" "}
+                  <span className="font-mono font-bold text-ink">{submittedResult.claimId}</span>. It is now active in the Admin Verification Queue and FRA Atlas.
+                </p>
+                <div className="mt-4 flex flex-wrap gap-2.5">
+                  <Link
+                    href={`/claims/${submittedResult.claimId}`}
+                    className="rounded-full bg-forest text-paper-raised px-4 py-2 font-mono text-[10px] uppercase tracking-wider font-bold transition-all hover:bg-forest-deep"
+                  >
+                    View Claim Dossier →
+                  </Link>
+                  <Link
+                    href="/admin"
+                    className="rounded-full border border-forest/30 bg-paper px-4 py-2 font-mono text-[10px] uppercase tracking-wider text-forest font-bold hover:bg-forest/5"
+                  >
+                    Open Admin Queue
+                  </Link>
+                  <Link
+                    href="/atlas"
+                    className="rounded-full border border-line bg-paper px-4 py-2 font-mono text-[10px] uppercase tracking-wider text-ink font-bold hover:border-forest"
+                  >
+                    View in Atlas
+                  </Link>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         ) : (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">

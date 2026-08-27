@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { Menu, X, ShieldCheck } from "lucide-react";
 import { useRole } from "@/lib/role-store";
 import { MAIN_NAV_ITEMS } from "@/lib/navigation";
+import { syncOfflineClaims } from "@/lib/offline-db";
 
 export function SiteHeader() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -23,6 +24,13 @@ export function SiteHeader() {
       .catch(() => {
         setIsLiveDb(false);
       });
+
+    // Sync offline claims
+    syncOfflineClaims().then((count) => {
+      if (count > 0) {
+        console.log(`[TRINETRA] Synced ${count} offline claims to database on mount.`);
+      }
+    });
   }, []);
 
   const isNavActive = (href: string) => {
