@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { UploadPanel } from "@/components/digitize/upload-panel";
 import { useRole } from "@/lib/role-store";
 import { OcrProgress } from "@/components/digitize/ocr-progress";
@@ -50,6 +50,14 @@ const LANGUAGES = [
 
 export default function DigitizePage() {
   const { isCommunity } = useRole();
+
+  useEffect(() => {
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw.js")
+        .then(() => console.log("Service Worker registered for offline Tesseract assets"))
+        .catch((err) => console.error("Service Worker registration failed:", err));
+    }
+  }, []);
   const [stage, setStage] = useState<Stage>("idle");
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
@@ -107,10 +115,10 @@ export default function DigitizePage() {
       setFields(result.fields);
       setConfidences(result.confidences);
       setStage("done");
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
       setError(
-        "OCR failed to run. This can happen on a slow connection the first time (it downloads a language model) — try again in a moment."
+        `OCR failed to run: ${err.message || err.toString()}. Note: If testing offline, please turn off your physical Wi-Fi/network rather than using browser DevTools "Offline" throttling (which blocks localhost access).`
       );
       setStage("idle");
     }
