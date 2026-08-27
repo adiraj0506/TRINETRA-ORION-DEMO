@@ -8,6 +8,7 @@ import { ReviewForm } from "@/components/digitize/review-form";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import { preprocessImage } from "@/lib/preprocess";
+import { createWorker } from "tesseract.js";
 import {
   extractFieldsWithConfidence,
   EMPTY_FIELDS,
@@ -85,8 +86,6 @@ export default function DigitizePage() {
     setOcrStatus("initializing");
 
     try {
-      const { createWorker } = await import("tesseract.js");
-      
       const langConfig = LANGUAGES.find((l) => l.code === langCode);
       const ocrLang = langConfig?.supported ? langConfig.code : "eng";
 
