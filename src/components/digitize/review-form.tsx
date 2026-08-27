@@ -276,7 +276,7 @@ export function ReviewForm({
           <div className="space-y-4">
             <div className="rounded-xl bg-approved/10 border border-approved/30 p-5 text-approved">
               <div className="flex items-center gap-2 font-display text-base font-semibold">
-                <span>✓</span> Record Persisted in Supabase & PostGIS
+                <span>✓</span> Claim Registered Successfully
               </div>
               <p className="mt-1 text-xs text-ink-soft">
                 Claim has been registered with ID{" "}
@@ -315,7 +315,7 @@ export function ReviewForm({
               }`}
             >
               {submitting
-                ? "Persisting to Supabase..."
+                ? "Submitting Claim..."
                 : isOffline
                 ? "Confirm & Save Offline"
                 : "Confirm & Submit Claim For Verification"}
