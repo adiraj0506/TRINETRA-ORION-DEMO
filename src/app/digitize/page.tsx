@@ -130,7 +130,8 @@ export default function DigitizePage() {
       await runOcr(processedUrl, selectedLang);
     } catch (err: any) {
       console.error(err);
-      setError(`Failed to preprocess image for OCR extraction: ${err.message || err.toString()}`);
+      const msg = err ? (err.message || err.toString()) : "Unknown image loading error";
+      setError(`Failed to preprocess image for OCR extraction: ${msg}`);
     }
   }
 
@@ -172,7 +173,8 @@ export default function DigitizePage() {
       setStage("done");
     } catch (err: any) {
       console.error(err);
-      setError(`Couldn't load the sample form: ${err.message || err.toString()}`);
+      const msg = err ? (err.message || err.toString()) : "Unknown sample loading error";
+      setError(`Couldn't load the sample form: ${msg}`);
     }
   }
 
