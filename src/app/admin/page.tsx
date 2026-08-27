@@ -14,8 +14,10 @@ import { ConvergenceCardModal } from "@/components/dss/convergence-card-modal";
 import { PageHeader } from "@/components/ui/page-header";
 import { Button } from "@/components/ui/button";
 import type { FullClaimDetails } from "@/lib/services/claim-service";
+import { useRole } from "@/lib/role-store";
 
 export default function AdminConsolePage() {
+  const { isAdmin, mounted } = useRole();
   const [claims, setClaims] = useState<ClaimMapRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -183,6 +185,25 @@ export default function AdminConsolePage() {
       return true;
     });
   }, [claims, filterState, filterStatus, filterClaimType, searchQuery]);
+
+  if (mounted && !isAdmin) {
+    return (
+      <div className="mx-auto max-w-7xl px-6 py-20 text-center">
+        <div className="rounded-xl border border-line bg-paper-raised p-12 max-w-lg mx-auto">
+          <span className="text-4xl">🔒</span>
+          <h2 className="mt-4 font-display text-xl text-ink font-semibold">Access Denied</h2>
+          <p className="mt-2 text-sm text-ink-soft leading-relaxed">
+            The Admin Console is restricted. Please switch your role to <strong>Administrator</strong> in the header profile selector to view the claims queue.
+          </p>
+          <div className="mt-6">
+            <Link href="/" className="rounded-full bg-forest text-paper-raised px-5 py-2.5 font-mono text-xs uppercase tracking-wider font-bold">
+              Return Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">

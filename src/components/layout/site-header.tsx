@@ -58,7 +58,7 @@ export function SiteHeader() {
             const active = isNavActive(item.href);
             // Hide digitize/admin for community view
             if (item.href === "/digitize" && role === "community") return null;
-            if (item.href === "/admin" && role === "community") return null;
+            if (item.href === "/admin" && (role === "community" || role === "verifier")) return null;
 
             return (
               <Link
@@ -141,7 +141,7 @@ export function SiteHeader() {
             {MAIN_NAV_ITEMS.map((item) => {
               const active = isNavActive(item.href);
               if (item.href === "/digitize" && role === "community") return null;
-              if (item.href === "/admin" && role === "community") return null;
+              if (item.href === "/admin" && (role === "community" || role === "verifier")) return null;
 
               return (
                 <Link
