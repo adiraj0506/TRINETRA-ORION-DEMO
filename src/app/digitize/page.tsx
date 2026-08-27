@@ -91,7 +91,7 @@ export default function DigitizePage() {
 
       const worker = await createWorker(ocrLang, 1, {
         workerPath: typeof window !== "undefined" ? `${window.location.origin}/tesseract/worker.min.js` : undefined,
-        corePath: typeof window !== "undefined" ? `${window.location.origin}/tesseract` : undefined,
+        corePath: typeof window !== "undefined" ? `${window.location.origin}/tesseract/tesseract-core-simd.wasm.js` : undefined,
         langPath: typeof window !== "undefined" ? `${window.location.origin}/tesseract/lang-data` : undefined,
         workerBlobURL: false,
         logger: (m) => {
